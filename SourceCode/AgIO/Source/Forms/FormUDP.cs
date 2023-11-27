@@ -16,7 +16,7 @@ namespace AgIO
         private readonly FormLoop mf = null;
 
         //used to send communication check pgn= C8 or 200
-        private byte[] sendIPToModules = { 0x80, 0x81, 0x7F, 201, 5, 201, 201, 192, 168, 5, 0x47 };
+        private byte[] sendIPToModules = { 0x80, 0x81, 0x7F, 201, 5, 201, 201, 192, 168, 5, 0xE5 };
         private byte[] ipCurrent = { 192, 168, 5 };
         private byte[] ipNew = { 192, 168, 5 };
 
@@ -132,7 +132,7 @@ namespace AgIO
 
             bool isSubnetMatchCard = false;
 
-            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0x47 };
+            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0xE5 };
 
             //Send out 255x4 to each installed network interface
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -218,6 +218,13 @@ namespace AgIO
                 sendIPToModules[7] = ipNew[0];
                 sendIPToModules[8] = ipNew[1];
                 sendIPToModules[9] = ipNew[2];
+
+                int crc = 0;
+                for (int i = 2; i + 1 < sendIPToModules.Length - 1; i++)
+                {
+                    crc += sendIPToModules[i];
+                }
+                sendIPToModules[sendIPToModules.Length - 1] = (byte)crc;
 
                 //loop thru all interfaces
                 foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())

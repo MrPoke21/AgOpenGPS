@@ -26,32 +26,28 @@ namespace AgOpenGPS
 
         private readonly Stopwatch udpWatch = new Stopwatch();
 
-        private byte[] byteBuffer = new byte[1024];
-        private int byteBufferIndex = 0;
-
         private void ReceiveFromAgIO(byte[] data)
         {
-
-
-
             if (data.Length > 4 && data[0] == 0x80 && data[1] == 0x81)
             {
-                int Length = Math.Max(((int)data[4]) , 5);
-                if (data.Length >= Length)
+                int Length = Math.Max((data[4]) + 6, 5);
+                if (data.Length == Length)
                 {
                     byte CK_A = 0;
-                    for (int j = 2; j < Length-3; j++)
+                    for (int j = 2; j < Length-1; j++)
                     {
                         CK_A += data[j];
                     }
 
-                    if (data[Length-3] != (byte)CK_A)
+                    if (data[Length-1] != (byte)CK_A)
                     {
+                        Debug.WriteLine("CRC packet error!!");
                         return;
                     }
                 }
                 else
                 {
+                    Debug.WriteLine("Packet lenght error!!");
                     return;
                 }
 
@@ -111,7 +107,7 @@ namespace AgOpenGPS
                                     ahrs.imuRoll = temp - ahrs.rollZero;
                                 }
                                 if (temp == float.MinValue)
-                                    ahrs.imuRoll = 0;                               
+                                    ahrs.imuRoll = 0;
 
                                 //altitude in meters
                                 temp = BitConverter.ToSingle(data, 37);
@@ -167,8 +163,8 @@ namespace AgOpenGPS
 
                                 if (isLogNMEA)
                                     pn.logNMEASentence.Append(
-                                        DateTime.UtcNow.ToString("mm:ss.ff",CultureInfo.InvariantCulture)+ " " +
-                                        Lat.ToString("N7") + " " + Lon.ToString("N7") );
+                                        DateTime.UtcNow.ToString("mm:ss.ff", CultureInfo.InvariantCulture) + " " +
+                                        Lat.ToString("N7") + " " + Lon.ToString("N7"));
 
                                 UpdateFixPosition();
                             }
@@ -177,17 +173,19 @@ namespace AgOpenGPS
 
                     case 0xD3: //external IMU
                         {
+                            if (data.Length != 14)
+                                break;
                             if (ahrs.imuRoll > 25 || ahrs.imuRoll < -25) ahrs.imuRoll = 0;
                             //Heading
                             ahrs.imuHeading = (Int16)((data[6] << 8) + data[5]);
                             ahrs.imuHeading *= 0.1;
-                            
+
                             //Roll
                             double rollK = (Int16)((data[8] << 8) + data[7]);
 
                             if (ahrs.isRollInvert) rollK *= -0.1;
                             else rollK *= 0.1;
-                            rollK -= ahrs.rollZero;                           
+                            rollK -= ahrs.rollZero;
                             ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
 
                             //Angular velocity
@@ -211,6 +209,8 @@ namespace AgOpenGPS
                     case 253: //return from autosteer module
                         {
                             //Steer angle actual
+                            if (data.Length != 14)
+                                break;
                             mc.actualSteerAngleChart = (Int16)((data[6] << 8) + data[5]);
                             mc.actualSteerAngleDegrees = (double)mc.actualSteerAngleChart * 0.01;
 
@@ -253,6 +253,8 @@ namespace AgOpenGPS
 
                     case 250:
                         {
+                            if (data.Length != 14)
+                                break;
                             mc.sensorData = data[5];
                             break;
                         }
@@ -270,7 +272,7 @@ namespace AgOpenGPS
 
                             break;
                         }
-                     #endregion
+                        #endregion
                 }
             }
         }
@@ -315,35 +317,13 @@ namespace AgOpenGPS
                 int msgLen = loopBackSocket.EndReceiveFrom(asyncResult, ref endPointLoopBack);
 
                 byte[] localMsg = new byte[msgLen];
-                //Array.Copy(loopBuffer, localMsg, msgLen);
-                Array.Copy(loopBuffer, 0, byteBuffer, byteBufferIndex, msgLen);
-                byteBufferIndex += msgLen;
+                Array.Copy(loopBuffer, localMsg, msgLen);
 
-                if (byteBufferIndex > 5)
-                {
-                    lock (byteBuffer.SyncRoot)
-                    {
-                        for (int i = 0; i < byteBufferIndex - 1; i++)
-                        {
-                            if (byteBuffer[i] == 13 && byteBuffer[i + 1] == 10)
-                            {
-                                byte[] d = new byte[i + 2];
-                                Array.Copy(byteBuffer, 0, d, 0, i + 2);
-                                if (d.Length > 2)
-                                {
-                                    BeginInvoke((MethodInvoker)(() => ReceiveFromAgIO(d)));
-                                }
-                                Array.Copy(byteBuffer, i + 2, byteBuffer, 0, byteBufferIndex - i - 1);
-                                byteBufferIndex -= i + 2;
-                                i = -1;
-                            }
-                        }
-                    }
-                }
-
+                // Listen for more connections again...
                 loopBackSocket.BeginReceiveFrom(loopBuffer, 0, loopBuffer.Length, SocketFlags.None,
                     ref endPointLoopBack, new AsyncCallback(ReceiveAppData), null);
 
+                BeginInvoke((MethodInvoker)(() => ReceiveFromAgIO(localMsg)));
             }
             catch (Exception)
             {
@@ -358,11 +338,11 @@ namespace AgOpenGPS
                 try
                 {
                     int crc = 0;
-                    for (int i = 2; i + 1 < byteData.Length-3; i++)
+                    for (int i = 2; i + 1 < byteData.Length; i++)
                     {
                         crc += byteData[i];
                     }
-                    byteData[byteData.Length - 3] = (byte)crc;
+                    byteData[byteData.Length - 1] = (byte)crc;
 
                     loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None,
                         epAgIO, new AsyncCallback(SendAsyncLoopData), null);

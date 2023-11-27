@@ -461,6 +461,13 @@ namespace AgIO
 
             DoTraffic();
 
+            int crc = 0;
+            for (int i = 2; i + 1 < helloFromAgIO.Length; i++)
+            {
+                crc += helloFromAgIO[i];
+            }
+            helloFromAgIO[helloFromAgIO.Length - 1] = (byte)crc;
+
             //send a hello to modules
             SendUDPMessage(helloFromAgIO, epModule);
 
