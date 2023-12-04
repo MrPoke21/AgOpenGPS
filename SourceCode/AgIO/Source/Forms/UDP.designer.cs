@@ -379,9 +379,26 @@ namespace AgIO
                                 i = -1;
                             }
                         }
+                        if(udpBufferIndex > 10)
+                        {
+                            if (udpBuffer[0] == 36)
+                            {
+                                byte[] panda = new byte[udpBufferIndex+1];
+                                Array.Copy(udpBuffer, 0, panda, 0, udpBufferIndex + 1);
+                                traffic.cntrGPSOut += panda.Length;
+                                rawBuffer += Encoding.ASCII.GetString(panda);
+
+                                BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ParseNMEA(ref rawBuffer)))));
+
+                                if (isUDPMonitorOn && isGPSLogOn)
+                                {
+                                    logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + System.Text.Encoding.ASCII.GetString(panda));
+                                }
+                                udpBufferIndex = 0;
+                            }
+                        }
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -442,21 +459,6 @@ namespace AgIO
                     {
                         traffic.helloFromIMU = 0;
                     }
-                    //Panda data
-                    else if (data[3] == 252)
-                    {
-                        byte[] panda = new byte[data[4]];
-                        Array.Copy(data, 5, panda, 0, data[4]);
-                        traffic.cntrGPSOut += panda.Length;
-                        rawBuffer += Encoding.ASCII.GetString(panda);
-                        ParseNMEA(ref rawBuffer);
-
-                        if (isUDPMonitorOn && isGPSLogOn)
-                        {
-                            logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + System.Text.Encoding.ASCII.GetString(data));
-                        }
-                    }
-
                     //scan Reply
                     else if (data[3] == 203) //
                     {
@@ -522,18 +524,6 @@ namespace AgIO
                         logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPointUDP.ToString() + "\t" + " < " + data[3].ToString() + "\r\n");
                     }
 
-                } // end of pgns
-
-                else if (data[0] == 36 && (data[1] == 71 || data[1] == 80 || data[1] == 75))
-                {
-                    traffic.cntrGPSOut += data.Length;
-                    rawBuffer += Encoding.ASCII.GetString(data);
-                    ParseNMEA(ref rawBuffer);
-
-                    if (isUDPMonitorOn && isGPSLogOn)
-                    {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + System.Text.Encoding.ASCII.GetString(data));
-                    }
                 }
             }
             catch
