@@ -82,6 +82,7 @@ namespace AgIO
 
         //used to send communication check pgn= C8 or 200
         private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 0x47 };
+        private long sPingTime = 0L;
 
         public IPAddress ipCurrent;
 
@@ -283,11 +284,11 @@ namespace AgIO
                     if (epNtrip != null && endPoint.Port == epNtrip.Port)
                     {
                         if (isNTRIPLogOn)
-                            logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
+                            logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
                     }
                     else
                     {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
+                            logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
                     }
                 }
 
@@ -339,7 +340,6 @@ namespace AgIO
                     Array.Copy(buffer, 0, udpBuffer, udpBufferIndex, msgLen);
                     udpBufferIndex += msgLen;
 
-
                     if (udpBufferIndex > 5)
                     {
 
@@ -383,8 +383,8 @@ namespace AgIO
                         {
                             if (udpBuffer[0] == 36)
                             {
-                                byte[] panda = new byte[udpBufferIndex+1];
-                                Array.Copy(udpBuffer, 0, panda, 0, udpBufferIndex + 1);
+                                byte[] panda = new byte[udpBufferIndex-1];
+                                Array.Copy(udpBuffer, 0, panda, 0, udpBufferIndex-1);
                                 traffic.cntrGPSOut += panda.Length;
                                 rawBuffer += Encoding.ASCII.GetString(panda);
 
@@ -392,7 +392,7 @@ namespace AgIO
 
                                 if (isUDPMonitorOn && isGPSLogOn)
                                 {
-                                    logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + System.Text.Encoding.ASCII.GetString(panda));
+                                    logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + Encoding.ASCII.GetString(panda) + "\r\n");
                                 }
                                 udpBufferIndex = 0;
                             }
@@ -402,6 +402,7 @@ namespace AgIO
             }
             catch (Exception ex)
             {
+                udpBufferIndex = 0;
                 Debug.Write(ex.Message);
                 Debug.Write(ex.StackTrace);
             }
@@ -433,6 +434,7 @@ namespace AgIO
                     if (data[3] == 126)
                     {
                         traffic.helloFromAutoSteer = 0;
+                        sPing.Text = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - sPingTime).ToString();
                         if (isViewAdvanced)
                         {
                             double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
@@ -521,7 +523,7 @@ namespace AgIO
 
                     if (isUDPMonitorOn)
                     {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPointUDP.ToString() + "\t" + " < " + data[3].ToString() + "\r\n");
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPointUDP.ToString() + "\t" + " < " + data[3].ToString() + "\r\n");
                     }
 
                 }

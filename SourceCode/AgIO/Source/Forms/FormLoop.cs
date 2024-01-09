@@ -136,6 +136,7 @@ namespace AgIO
             lblIMUComm.Text = "";
             lblMod1Comm.Text = "";
             lblMod2Comm.Text = "";
+            sPing.Text = "";
 
             //set baud and port from last time run
             baudRateGPS = Settings.Default.setPort_baudRateGPS;
@@ -469,6 +470,9 @@ namespace AgIO
             helloFromAgIO[helloFromAgIO.Length - 1] = (byte)crc;
 
             //send a hello to modules
+
+            sPingTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             SendUDPMessage(helloFromAgIO, epModule);
 
             if (isLogNMEA)
