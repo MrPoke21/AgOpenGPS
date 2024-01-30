@@ -30,11 +30,13 @@ namespace AgIO
 
         //key event to restore window
         private const int ALT = 0xA4;
+
         private const int EXTENDEDKEY = 0x1;
         private const int KEYUP = 0x2;
 
         //Stringbuilder
         public StringBuilder logNMEASentence = new StringBuilder();
+
         public StringBuilder logMonitorSentence = new StringBuilder();
         public StringBuilder logUDPSentence = new StringBuilder();
         public bool isLogNMEA, isLogMonitorOn, isUDPMonitorOn, isGPSLogOn, isNTRIPLogOn;
@@ -65,6 +67,7 @@ namespace AgIO
 
         //used to hide the window and not update text fields and most counters
         public bool isAppInFocus = true, isLostFocus;
+
         public int focusSkipCounter = 310;
 
         //The base directory where Drive will be stored and fields and vehicles branch from
@@ -167,7 +170,6 @@ namespace AgIO
                 if (spIMU.IsOpen) lblIMUComm.Text = portNameIMU;
             }
 
-
             //same for SteerModule port
             portNameSteerModule = Settings.Default.setPort_portNameSteer;
             wasSteerModuleConnectedLastRun = Settings.Default.setPort_wasSteerModuleConnected;
@@ -247,10 +249,7 @@ namespace AgIO
                 {
                     TimedMessageBox(1500, "URL Not Located, Network Down?", "Cannot Find: " + Properties.Settings.Default.setNTRIP_casterURL);
                     //if we had a timer already, kill it
-                    if (tmr != null)
-                    {
-                        tmr.Dispose();
-                    }
+                    tmr?.Dispose();
 
                     //use last known
                     broadCasterIP = Properties.Settings.Default.setNTRIP_casterIP; //Select correct Address
@@ -277,7 +276,7 @@ namespace AgIO
         {
             if (isConnectedIMU)
             {
-                btnIMU.Visible = true; 
+                btnIMU.Visible = true;
                 lblIMUComm.Visible = true;
                 cboxIsIMUModule.BackgroundImage = Properties.Resources.Cancel64;
             }
@@ -348,7 +347,6 @@ namespace AgIO
                 }
                 finally { UDPSocket.Close(); }
             }
-
         }
 
         private void oneSecondLoopTimer_Tick(object sender, EventArgs e)
@@ -366,7 +364,6 @@ namespace AgIO
             //to check if new data for subnet
 
             secondsSinceStart = (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds;
-
 
             if (focusSkipCounter != 0)
             {
@@ -396,17 +393,17 @@ namespace AgIO
                 focusSkipCounter = int.MaxValue;
             }
 
-            if (isLostFocus && focusSkipCounter !=0)
+            if (isLostFocus && focusSkipCounter != 0)
             {
                 if (focusSkipCounter == 1)
                 {
                     WindowState = FormWindowState.Minimized;
                 }
 
-                focusSkipCounter-- ;
+                focusSkipCounter--;
             }
 
-            #endregion
+            #endregion Sleep
 
             //every couple or so seconds
             if ((secondsSinceStart - twoSecondTimer) > 2)
@@ -429,7 +426,7 @@ namespace AgIO
                 threeMinuteTimer = secondsSinceStart;
             }
 
-            // 1 Second Loop Part2 
+            // 1 Second Loop Part2
             if (isViewAdvanced)
             {
                 if (isNTRIP_RequiredOn)
@@ -486,7 +483,6 @@ namespace AgIO
 
             if (focusSkipCounter < 310) lblSkipCounter.Text = focusSkipCounter.ToString();
             else lblSkipCounter.Text = "On";
-
         }
 
         private void TenSecondLoop()
@@ -517,7 +513,7 @@ namespace AgIO
                         //add the uniques messages to all the new ones
                         foreach (var item in aList)
                         {
-                                rList.Add(item);
+                            rList.Add(item);
                         }
 
                         //sort and group using Linq
@@ -532,7 +528,7 @@ namespace AgIO
                         foreach (var grp in g)
                         {
                             aList.Add(grp.Key);
-                            sbRTCM.AppendLine(grp.Key + " - " + (grp.Count()-1));
+                            sbRTCM.AppendLine(grp.Key + " - " + (grp.Count() - 1));
                             count++;
                         }
 
@@ -548,7 +544,6 @@ namespace AgIO
 
                         lblMessagesFound.Text = count.ToString();
                     }
-
                     catch
                     {
                         sbRTCM.Clear();
@@ -598,7 +593,7 @@ namespace AgIO
                     }
                 }
 
-                #endregion
+                #endregion Serial update
             }
         }
 
@@ -613,9 +608,8 @@ namespace AgIO
                 lblMessages.Text = "Reading...";
                 threeMinuteTimer = secondsSinceStart;
                 lblMessagesFound.Text = "-";
-                aList.Clear();  
+                aList.Clear();
                 rList.Clear();
-
             }
             else
             {
@@ -695,7 +689,7 @@ namespace AgIO
 
         private void FormLoop_Resize(object sender, EventArgs e)
         {
-            if(this.WindowState == FormWindowState.Minimized)
+            if (this.WindowState == FormWindowState.Minimized)
             {
                 if (isViewAdvanced) btnSlide.PerformClick();
                 isLostFocus = true;
@@ -706,7 +700,7 @@ namespace AgIO
         private void ShowAgIO()
         {
             Process[] processName = Process.GetProcessesByName("AgIO");
-            
+
             if (processName.Length != 0)
             {
                 // Guard: check if window already has focus.
@@ -723,8 +717,8 @@ namespace AgIO
 
                 // Show window in forground.
                 SetForegroundWindow(processName[0].MainWindowHandle);
-            }  
-            
+            }
+
             //{
             //    //Set foreground window
             //    if (IsIconic(processName[0].MainWindowHandle))
@@ -743,7 +737,7 @@ namespace AgIO
 
             if (focusSkipCounter != 0)
             {
-                lblFromGPS.Text = traffic.cntrGPSOut == 0 ? "---" : ((traffic.cntrGPSOut>>1)).ToString();
+                lblFromGPS.Text = traffic.cntrGPSOut == 0 ? "---" : ((traffic.cntrGPSOut >> 1)).ToString();
 
                 //reset all counters
                 traffic.cntrGPSOut = 0;
@@ -780,7 +774,7 @@ namespace AgIO
         private void cboxIsSteerModule_Click(object sender, EventArgs e)
         {
             isConnectedSteer = cboxIsSteerModule.Checked;
-            SetModulesOnOff();  
+            SetModulesOnOff();
         }
 
         private void cboxIsMachineModule_Click(object sender, EventArgs e)
@@ -828,7 +822,7 @@ namespace AgIO
 
         private void btnRelayTest_Click(object sender, EventArgs e)
         {
-                helloFromAgIO[7] = 1;
+            helloFromAgIO[7] = 1;
         }
 
         private void toolStripMenuItem4_Click(object sender, EventArgs e)
@@ -996,7 +990,5 @@ namespace AgIO
         {
             isLogNMEA = cboxLogNMEA.Checked;
         }
-
     }
 }
-
