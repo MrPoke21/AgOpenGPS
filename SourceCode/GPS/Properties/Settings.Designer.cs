@@ -2783,5 +2783,41 @@ namespace AgOpenGPS.Properties {
                 this["setWindow_abDrawSize"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1022, 742")]
+        public global::System.Drawing.Size setWindow_HeadlineSize {
+            get {
+                return ((global::System.Drawing.Size)(this["setWindow_HeadlineSize"]));
+            }
+            set {
+                this["setWindow_HeadlineSize"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1022, 742")]
+        public global::System.Drawing.Size setWindow_HeadAcheSize {
+            get {
+                return ((global::System.Drawing.Size)(this["setWindow_HeadAcheSize"]));
+            }
+            set {
+                this["setWindow_HeadAcheSize"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1022, 742")]
+        public global::System.Drawing.Size setWindow_MapBndSize {
+            get {
+                return ((global::System.Drawing.Size)(this["setWindow_MapBndSize"]));
+            }
+            set {
+                this["setWindow_MapBndSize"] = value;
+            }
+        }
     }
 }

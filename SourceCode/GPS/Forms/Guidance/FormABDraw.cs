@@ -73,6 +73,7 @@ namespace AgOpenGPS
 
             cboxIsZoom.Checked = false;
             zoomToggle = false;
+
             Size = Properties.Settings.Default.setWindow_abDrawSize;
 
             Screen myScreen = Screen.FromControl(this);
@@ -186,6 +187,7 @@ namespace AgOpenGPS
             btnMakeABLine.Enabled = false;
             btnMakeCurve.Enabled = false;
             start = 99999; end = 99999;
+            isA = true;
 
             FixLabelsCurve();
 
@@ -340,15 +342,12 @@ namespace AgOpenGPS
         {            //count the points from the boundary
             for (int q = 0; q < mf.bnd.bndList.Count; q++)
             {
+                vec3 pt3;
                 mf.curve.desList?.Clear();
-
-                //outside point
-                vec3 pt3 = new vec3();
-
                     for (int i = 0; i < mf.bnd.bndList[bndSelect].fenceLine.Count; i++)
                     {
                         //calculate the point inside the boundary
-                        pt3 = mf.bnd.bndList[bndSelect].fenceLine[i];
+                       pt3 = new vec3(mf.bnd.bndList[bndSelect].fenceLine[i]);
 
                         mf.curve.desList.Add(new vec3(pt3));
                     }
@@ -427,12 +426,12 @@ namespace AgOpenGPS
             }
 
             mf.curve.desList?.Clear();
-            vec3 pt3 = new vec3();
+            vec3 pt3;
 
                 for (int i = start; i < end; i++)
                 {
                     //calculate the point inside the boundary
-                    pt3 = mf.bnd.bndList[bndSelect].fenceLine[i];
+                    pt3 = new vec3(mf.bnd.bndList[bndSelect].fenceLine[i]);
 
                     mf.curve.desList.Add(new vec3(pt3));
 
@@ -900,14 +899,7 @@ namespace AgOpenGPS
         {
             Width = (Height * 4 / 3);
 
-            if (Height > Width)
-            {
-                oglSelf.Height = oglSelf.Width = Width - 60;
-            }
-            else
-            {
-                oglSelf.Height = oglSelf.Width = Height - 60;
-            }
+            oglSelf.Height = oglSelf.Width = Height - 50;
 
             oglSelf.Left = 2;
             oglSelf.Top = 2;
@@ -924,17 +916,13 @@ namespace AgOpenGPS
             GL.MatrixMode(MatrixMode.Modelview);
 
             tlp1.Width = Width - oglSelf.Width - 4;
-            tlp1.Left = oglSelf.Width + 4;
+            tlp1.Left = oglSelf.Width;
 
             Screen myScreen = Screen.FromControl(this);
             Rectangle area = myScreen.WorkingArea;
 
             this.Top = (area.Height - this.Height) / 2;
             this.Left = (area.Width - this.Width) / 2;
-        }
-
-        private void FormABDraw_Resize(object sender, EventArgs e)
-        {
         }
 
         private void oglSelf_Resize(object sender, EventArgs e)
