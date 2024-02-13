@@ -10,7 +10,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace AgOpenGPS
 {
-    public partial class FormMapBnd : Form
+    public partial class FormBndTool : Form
     {
         //access to the main GPS form and all its variables
         private readonly FormGPS mf = null;
@@ -23,10 +23,6 @@ namespace AgOpenGPS
         private int bndSelect = 0, smPtsChoose = 1, smPts = 4;
 
         private double zoom = 1, sX = 0, sY = 0;
-
-        private int operations;
-
-        //public List<CTrk> gTemp = new List<CTrk>();
 
         public vec3 pint = new vec3(0.0, 1.0, 0.0);
 
@@ -56,7 +52,7 @@ namespace AgOpenGPS
         //baseline to calc the most right vector - starts at 270 deg.
         private double prevHeading = Math.PI + glm.PIBy2;
 
-        public FormMapBnd(Form callingForm)
+        public FormBndTool(Form callingForm)
         {
             //get copy of the calling main form
             mf = callingForm as FormGPS;
@@ -66,7 +62,7 @@ namespace AgOpenGPS
             mf.CalculateMinMax();
         }
 
-        private void FormMapBnd_Load(object sender, EventArgs e)
+        private void FormBndTool_Load(object sender, EventArgs e)
         {
             //already have a boundary
             if (mf.bnd.bndList.Count == 0)
@@ -114,16 +110,16 @@ namespace AgOpenGPS
 
             this.Top = (area.Height - this.Height) / 2;
             this.Left = (area.Width - this.Width) / 2;
-            FormMapBnd_ResizeEnd(this, e);
+            FormBndTool_ResizeEnd(this, e);
         }
 
-        private void FormMapBnd_FormClosing(object sender, FormClosingEventArgs e)
+        private void FormBndTool_FormClosing(object sender, FormClosingEventArgs e)
         {
             Properties.Settings.Default.setWindow_MapBndSize = Size;
             Properties.Settings.Default.Save();
         }
 
-        private void FormMapBnd_ResizeEnd(object sender, EventArgs e)
+        private void FormBndTool_ResizeEnd(object sender, EventArgs e)
         {
             Width = (Height * 4 / 3);
 
@@ -160,8 +156,6 @@ namespace AgOpenGPS
 
             for (int j = 0; j < secList.Count; j++)
             {
-                operations++;
-
                 if (j == currentPoint) continue;
 
                 if (arr[j].heading == 1)
@@ -354,7 +348,6 @@ namespace AgOpenGPS
         {
             //start all over
             start = end = 99999;
-            operations = 0;
             zoom = 1;
             sX = 0;
             sY = 0;
@@ -572,7 +565,11 @@ namespace AgOpenGPS
 
         private void btnStartStop_Click(object sender, EventArgs e)
         {
-            if (secList.Count == 0) return;
+            if (secList.Count < 20)
+            {
+                mf.YesMessageBox("Not enough points to make a boundary");
+                return;
+            }
 
             arr = new vec3[secList.Count];
             prevHeading = Math.PI + glm.PIBy2;

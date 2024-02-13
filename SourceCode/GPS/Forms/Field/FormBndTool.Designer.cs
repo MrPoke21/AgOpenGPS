@@ -1,6 +1,6 @@
 ﻿namespace AgOpenGPS
 {
-    partial class FormMapBnd
+    partial class FormBndTool
     {
         /// <summary>
         /// Required designer variable.
@@ -281,12 +281,12 @@
             // 
             this.btnResetReduce.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnResetReduce.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.btnResetReduce.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.btnResetReduce.BackgroundImage = global::AgOpenGPS.Properties.Resources.Play;
+            this.btnResetReduce.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.tlp1.SetColumnSpan(this.btnResetReduce, 3);
             this.btnResetReduce.FlatAppearance.BorderColor = System.Drawing.Color.Black;
             this.btnResetReduce.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnResetReduce.Font = new System.Drawing.Font("Tahoma", 14.25F);
-            this.btnResetReduce.Image = global::AgOpenGPS.Properties.Resources.BoundarySmooth;
             this.btnResetReduce.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.btnResetReduce.Location = new System.Drawing.Point(20, 20);
             this.btnResetReduce.Name = "btnResetReduce";
@@ -424,9 +424,9 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Draw AB - Click 2 points on the Boundary to Begin";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMapBnd_FormClosing);
-            this.Load += new System.EventHandler(this.FormMapBnd_Load);
-            this.ResizeEnd += new System.EventHandler(this.FormMapBnd_ResizeEnd);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormBndTool_FormClosing);
+            this.Load += new System.EventHandler(this.FormBndTool_Load);
+            this.ResizeEnd += new System.EventHandler(this.FormBndTool_ResizeEnd);
             this.tlp1.ResumeLayout(false);
             this.tlp1.PerformLayout();
             this.ResumeLayout(false);

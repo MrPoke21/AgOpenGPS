@@ -64,7 +64,7 @@ namespace AgOpenGPS
         public bool isJobStarted = false, isBtnAutoSteerOn, isLidarBtnOn = true;
 
         //if we are saving a file
-        public bool isSavingFile = false, isLogNMEA = false, isLogElevation = false;
+        public bool isSavingFile = false, isLogNMEA = false;
 
         //texture holders
         public uint[] texture;
@@ -234,6 +234,11 @@ namespace AgOpenGPS
         /// </summary>
         public CFont font;
 
+        public ShapeFile shape;
+        /// <summary>
+        /// The new brightness code
+        /// </summary>
+
         private void panelRight_Paint(object sender, PaintEventArgs e)
         {
 
@@ -250,6 +255,7 @@ namespace AgOpenGPS
         public CWindowsSettingsBrightnessController displayBrightness;
 
         #endregion // Class Props and instances
+
 
         public FormGPS()
         {
@@ -339,6 +345,9 @@ namespace AgOpenGPS
 
             //brightness object class
             displayBrightness = new CWindowsSettingsBrightnessController(Properties.Settings.Default.setDisplay_isBrightnessOn);
+
+            //shape file object
+            shape = new ShapeFile(this);
         }
 
         private void FormGPS_Load(object sender, EventArgs e)
@@ -498,12 +507,13 @@ namespace AgOpenGPS
             SmoothABtoolStripMenu.Text = gStr.gsSmoothABCurve;
             boundariesToolStripMenuItem.Text = gStr.gsBoundary;
             headlandToolStripMenuItem.Text = gStr.gsHeadland;
-            headlandBuildToolStripMenuItem.Text = gStr.gsHeadland + " (Lines)";
+            headlandBuildToolStripMenuItem.Text = gStr.gsHeadland + " (2)";
             deleteContourPathsToolStripMenuItem.Text = gStr.gsDeleteContourPaths;
-            deleteAppliedAreaToolStripMenuItem.Text = gStr.gsDeleteAppliedArea;
-            deleteForSureToolStripMenuItem.Text = gStr.gsAreYouSure;
+            deleteAppliedToolStripMenuItem.Text = gStr.gsDeleteAppliedArea;
             tramLinesMenuField.Text = gStr.gsTramLines;
             recordedPathStripMenu.Text = gStr.gsRecordedPathMenu;
+            flagByLatLonToolStripMenuItem.Text = gStr.gsFlagByLatLon;
+            boundaryToolToolStripMenu.Text = gStr.gsBoundary + " Tool";
 
             webcamToolStrip.Text = gStr.gsWebCam;
             offsetFixToolStrip.Text = gStr.gsOffsetFix;
@@ -532,13 +542,6 @@ namespace AgOpenGPS
                         }
                     }
                 }
-            }
-
-            DateTime dt2 = new DateTime(2024, 02, 13);
-            if (DateTime.Now > dt2)
-            {
-                YesMessageBox("This version is expired");
-                Environment.Exit(0);
             }
         }
 
@@ -706,16 +709,18 @@ namespace AgOpenGPS
 
         public enum textures : uint
         {
-            SkyDay, Floor, Font,
+            Floor, Font,
             Turn, TurnCancel, TurnManual,
             Compass, Speedo, SpeedoNeedle,
-            Lift, SkyNight, SteerPointer,
+            Lift, SteerPointer,
             SteerDot, Tractor, QuestionMark,
             FrontWheels, FourWDFront, FourWDRear,
-            Harvester, Lateral, bingGrid, 
+            Harvester, 
+            Lateral, bingGrid, 
             NoGPS, ZoomIn48, ZoomOut48, 
-            Pan, MenuHideShow, ToolWheels, Tire, TramDot
-
+            Pan, MenuHideShow, 
+            ToolWheels, Tire, TramDot,
+            RateMap1, RateMap2, RateMap3
         }
 
         public void LoadGLTextures()
@@ -724,15 +729,19 @@ namespace AgOpenGPS
 
             Bitmap[] oglTextures = new Bitmap[]
             {
-                Properties.Resources.z_SkyDay,Properties.Resources.z_Floor,Properties.Resources.z_Font,
-                Properties.Resources.z_Turn,Properties.Resources.z_TurnCancel,Properties.Resources.z_TurnManual,
-                Properties.Resources.z_Compass,Properties.Resources.z_Speedo,Properties.Resources.z_SpeedoNeedle,
-                Properties.Resources.z_Lift,Properties.Resources.z_SkyNight,Properties.Resources.z_SteerPointer,
-                Properties.Resources.z_SteerDot,GetTractorBrand(Settings.Default.setBrand_TBrand),Properties.Resources.z_QuestionMark,
-                Properties.Resources.z_FrontWheels,Get4WDBrandFront(Settings.Default.setBrand_WDBrand), Get4WDBrandRear(Settings.Default.setBrand_WDBrand),
-                GetHarvesterBrand(Settings.Default.setBrand_HBrand), Properties.Resources.z_LateralManual, Resources.z_bingMap, 
-                Resources.z_NoGPS, Resources.ZoomIn48, Resources.ZoomOut48, Resources.Pan, Resources.MenuHideShow,
-                Resources.z_Tool, Resources.z_Tire, Resources.z_TramOnOff
+                Resources.z_Floor,Resources.z_Font,
+                Resources.z_Turn,Resources.z_TurnCancel,Resources.z_TurnManual,
+                Resources.z_Compass,Resources.z_Speedo,Resources.z_SpeedoNeedle,
+                Resources.z_Lift,Resources.z_SteerPointer,
+                Resources.z_SteerDot,GetTractorBrand(Settings.Default.setBrand_TBrand),Resources.z_QuestionMark,
+                Resources.z_FrontWheels,Get4WDBrandFront(Settings.Default.setBrand_WDBrand), 
+                Get4WDBrandRear(Settings.Default.setBrand_WDBrand),
+                GetHarvesterBrand(Settings.Default.setBrand_HBrand), 
+                Resources.z_LateralManual, Resources.z_bingMap, 
+                Resources.z_NoGPS, Resources.ZoomIn48, Resources.ZoomOut48, 
+                Resources.Pan, Resources.MenuHideShow,
+                Resources.z_Tool, Resources.z_Tire, Resources.z_TramOnOff, 
+                Resources.z_RateMap1, Resources.z_RateMap2, Resources.z_RateMap3
             };
 
             texture = new uint[oglTextures.Length];
@@ -896,6 +905,7 @@ namespace AgOpenGPS
             isPanelABHidden = false;
 
             FieldMenuButtonEnableDisable(true);
+            PanelUpdateRightAndBottom();
             PanelsAndOGLSize();
             SetZoom();
             fileSaveCounter = 25;
@@ -910,6 +920,8 @@ namespace AgOpenGPS
             recPath.resumeState = 0;
             btnResumePath.Image = Properties.Resources.pathResumeStart;
             recPath.currentPositonIndex = 0;
+
+            sbGrid.Clear();
 
             //reset field offsets
             if (!isKeepOffsetsOn)
@@ -940,6 +952,7 @@ namespace AgOpenGPS
 
             //clean all the lines
             bnd.bndList.Clear();
+            bnd.shpList.Clear();
 
             panelRight.Enabled = false;
             FieldMenuButtonEnableDisable(false);
@@ -1097,6 +1110,7 @@ namespace AgOpenGPS
             PanelsAndOGLSize();
             SetZoom();
             worldGrid.isGeoMap = false;
+            worldGrid.isRateMap = false;
 
             panelSim.Top = Height - 60;
 
@@ -1104,8 +1118,8 @@ namespace AgOpenGPS
 
             using (Bitmap bitmap = Properties.Resources.z_bingMap)
             {
-                GL.GenTextures(1, out texture[20]);
-                GL.BindTexture(TextureTarget.Texture2D, texture[20]);
+                GL.GenTextures(1, out texture[(int)FormGPS.textures.bingGrid]);
+                GL.BindTexture(TextureTarget.Texture2D, texture[(int)FormGPS.textures.bingGrid]);
                 BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, bitmapData.Width, bitmapData.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
                 bitmap.UnlockBits(bitmapData);
@@ -1118,8 +1132,9 @@ namespace AgOpenGPS
         {
             SmoothABtoolStripMenu.Enabled = isOn;
             deleteContourPathsToolStripMenuItem.Enabled = isOn;
-            deleteAppliedAreaToolStripMenuItem.Enabled = isOn;
+            boundaryToolToolStripMenu.Enabled = isOn;
             offsetFixToolStrip.Enabled = isOn;
+            appMapToolStripMenu.Enabled = isOn;
 
             boundariesToolStripMenuItem.Enabled = isOn;
             headlandToolStripMenuItem.Enabled = isOn;
