@@ -157,11 +157,6 @@ namespace AgIO
             SendDataToLoopBack(byteData, epAgOpen);
         }
 
-        private void SendToLoopBackMessageVR(byte[] byteData)
-        {
-            SendDataToLoopBack(byteData, epAgVR);
-        }
-
         private void SendDataToLoopBack(byte[] byteData, IPEndPoint endPoint)
         {
             try
@@ -199,9 +194,6 @@ namespace AgIO
         {
             //Send out to udp network
             SendUDPMessage(data, epModule);
-
-            //send out to VR Loopback
-            if (isPluginUsed) SendToLoopBackMessageVR(data);
 
             if (data[0] == 0x80 && data[1] == 0x81)
             {
@@ -432,9 +424,6 @@ namespace AgIO
                 {
                     //module return via udp sent to AOG
                     SendToLoopBackMessageAOG(data);
-
-                    //module data also sent to VR
-                    if (isPluginUsed) SendToLoopBackMessageVR(data);
 
                     //check for Scan and Hello
                     if (data[3] == 126)
