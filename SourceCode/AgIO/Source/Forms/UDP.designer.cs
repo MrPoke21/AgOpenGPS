@@ -206,6 +206,18 @@ namespace AgIO
                             SendMachineModulePort(data, data.Length);
                             break;
                         }
+                    case 0xEF: //239 machine pgn
+                        {
+                            SendMachineModulePort(data, data.Length);
+                            SendSteerModulePort(data, data.Length);
+                            break;
+                        }
+                    case 0xE5: //229 Symmetric Sections - Zones
+                        {
+                            SendMachineModulePort(data, data.Length);
+                            //SendSteerModulePort(data, data.Length);
+                            break;
+                        }
                     case 0xFC: //252 steer settings
                         {
                             SendSteerModulePort(data, data.Length);
@@ -214,32 +226,18 @@ namespace AgIO
                     case 0xFB: //251 steer config
                         {
                             SendSteerModulePort(data, data.Length);
-                            break;
-                        }
-                    case 0xEF: //239 machine pgn
-                        {
-                            SendMachineModulePort(data, data.Length);
-                            SendSteerModulePort(data, data.Length);
-                            break;
-                        }
+                            break;                        }
 
                     case 0xEE: //238 machine config
                         {
                             SendMachineModulePort(data, data.Length);
                             SendSteerModulePort(data, data.Length);
-                            break;
-                        }
+                            break;                        }
 
                     case 0xEC: //236 machine config
                         {
                             SendMachineModulePort(data, data.Length);
                             SendSteerModulePort(data, data.Length);
-                            break;
-                        }
-                    case 0xE5: //232 Symmetric Sections - Zones
-                        {
-                            SendMachineModulePort(data, data.Length);
-                            //SendSteerModulePort(data, data.Length);
                             break;
                         }
                 }
