@@ -77,9 +77,6 @@ namespace AgIO
         // Data stream
         private byte[] buffer = new byte[1024];
 
-        private byte[] udpBuffer = new byte[1024];
-        private int udpBufferIndex = 0;
-
         //used to send communication check pgn= C8 or 200
         private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 0x47 };
         private long sPingTime = 0L;
@@ -226,13 +223,15 @@ namespace AgIO
                     case 0xFB: //251 steer config
                         {
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEE: //238 machine config
                         {
                             SendMachineModulePort(data, data.Length);
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEC: //236 machine config
                         {
@@ -241,7 +240,7 @@ namespace AgIO
                             break;
                         }
                 }
-            }                            
+            }
         }
 
         private void ReceiveDataLoopAsync(IAsyncResult asyncResult)
@@ -284,7 +283,7 @@ namespace AgIO
                     }
                     else
                     {
-                            logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
                     }
                 }
 
@@ -331,74 +330,47 @@ namespace AgIO
                 // Receive all data
                 int msgLen = UDPSocket.EndReceiveFrom(asyncResult, ref endPointUDP);
 
-                lock (udpBuffer.SyncRoot)
-                {
-                    Array.Copy(buffer, 0, udpBuffer, udpBufferIndex, msgLen);
-                    udpBufferIndex += msgLen;
+                byte[] localMsg = new byte[msgLen];
+                Array.Copy(buffer, localMsg, msgLen);
 
-                    if (udpBufferIndex > 5)
+                if (msgLen > 6 && msgLen == localMsg[4] + 6 && localMsg[0] == 128 && localMsg[1] == 129)
+                {
+
+                    byte CK_A = 0;
+                    for (int j = 2; j < msgLen - 1; j++)
+                    {
+                        CK_A += localMsg[j];
+                    }
+
+
+                    if (localMsg[msgLen - 1] == (byte)CK_A)
                     {
 
-                        for (int i = 0; i < udpBufferIndex - 1; i++)
-                        {
-                            if (udpBuffer[i] == 128 && udpBuffer[i + 1] == 129)
-                            {
-                                int lenght = udpBuffer[i + 4] + 6;
-                                if (lenght > 1+udpBufferIndex -i )
-                                {
-                                    Debug.WriteLine("lenght error");
-                                    break;
-                                }
-                                byte[] d = new byte[lenght];
-                                Array.Copy(udpBuffer, i, d, 0, lenght);
-
-                                byte CK_A = 0;
-                                for (int j = 2; j < lenght - 1; j++)
-                                {
-                                    CK_A += d[j];
-                                }
-
-
-                                if (d[lenght - 1] == (byte)CK_A)
-                                {
-
-                                    BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(d)))));
-                                }
-                                else
-                                {
-                                    Debug.WriteLine("CRC error");
-                                }
-                                Array.Copy(udpBuffer, i, udpBuffer, 0, lenght);
-
-                                udpBufferIndex -= lenght;
-
-                                i = -1;
-                            }
-                        }
-                        if(udpBufferIndex > 10)
-                        {
-                            if (udpBuffer[0] == 36)
-                            {
-                                byte[] panda = new byte[udpBufferIndex-1];
-                                Array.Copy(udpBuffer, 0, panda, 0, udpBufferIndex-1);
-                                traffic.cntrGPSOut += panda.Length;
-                                rawBuffer += Encoding.ASCII.GetString(panda);
-
-                                BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ParseNMEA(ref rawBuffer)))));
-
-                                if (isUDPMonitorOn && isGPSLogOn)
-                                {
-                                    logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + Encoding.ASCII.GetString(panda) + "\r\n");
-                                }
-                                udpBufferIndex = 0;
-                            }
-                        }
+                        BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(localMsg)))));
+                    }
+                    else
+                    {
+                        Debug.WriteLine("CRC error");
                     }
                 }
+                else if (msgLen > 10)
+                {
+                    traffic.cntrGPSOut += msgLen;
+                    rawBuffer += Encoding.ASCII.GetString(localMsg);
+
+                    BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ParseNMEA(ref rawBuffer)))));
+
+                    if (isUDPMonitorOn && isGPSLogOn)
+                    {
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + Encoding.ASCII.GetString(localMsg) + "\r\n");
+                    }
+                }
+
+
+
             }
             catch (Exception ex)
             {
-                udpBufferIndex = 0;
                 Debug.Write(ex.Message);
                 Debug.Write(ex.StackTrace);
             }
@@ -407,7 +379,8 @@ namespace AgIO
                 // Listen for more connections again...
                 UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP,
                 new AsyncCallback(ReceiveDataUDPAsync), null);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Debug.Write(ex.Message);
                 Debug.Write(ex.StackTrace);
