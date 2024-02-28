@@ -375,20 +375,6 @@ namespace AgOpenGPS
                 mf.font.DrawText3D(desPtB.easting, desPtB.northing, "&B");
         }
 
-        public void DrawProposed(int i)
-        {
-            GL.LineWidth(4);
-            GL.Color3(0.30f, 0.972f, 0.32f);
-            GL.Begin(PrimitiveType.Lines);
-            {
-                GL.Vertex3(mf.trk.gArr[i].ptA.easting - (Math.Sin(mf.trk.gArr[i].heading) * abLength), 
-                    mf.trk.gArr[i].ptA.northing - (Math.Cos(mf.trk.gArr[i].heading) * abLength), 0);
-                GL.Vertex3(mf.trk.gArr[i].ptB.easting + (Math.Sin(mf.trk.gArr[i].heading) * abLength),
-                    mf.trk.gArr[i].ptB.northing + (Math.Cos(mf.trk.gArr[i].heading) * abLength), 0);
-            }
-            GL.End();
-        }
-
         public void DrawABLines()
         {
             //Draw AB Points
@@ -584,9 +570,10 @@ namespace AgOpenGPS
             double hsin = Math.Sin(abHeading);
             double hcos = Math.Cos(abHeading);
 
+            double len = glm.Distance(mf.trk.gArr[mf.trk.idx].endPtA, mf.trk.gArr[mf.trk.idx].endPtB);
             //divide up the AB line into segments
             vec2 P1 = new vec2();
-            for (int i = 0; i < 3200; i += 4)
+            for (int i = 0; i < (int)len; i += 4)
             {
                 P1.easting = (hsin * i) + mf.trk.gArr[mf.trk.idx].endPtA.easting;
                 P1.northing = (hcos * i) + mf.trk.gArr[mf.trk.idx].endPtA.northing;
