@@ -934,12 +934,6 @@ namespace AgOpenGPS
 
             #region Youturn
 
-            //reset the fault distance to an appropriate weird number
-            //-2222 means it fell out of the loop completely
-            //-3333 means unable to find a nearest point at all even though inside the work area of field
-            // -4444 means cross trac error too high
-            distancePivotToTurnLine = -4444;
-
             //if an outer boundary is set, then apply critical stop logic
             if (bnd.bndList.Count > 0)
             {
@@ -958,9 +952,9 @@ namespace AgOpenGPS
                     {
                         mc.isOutOfBounds = false;
                         //now check to make sure we are not in an inner turn boundary - drive thru is ok
-                        if (yt.youTurnPhase != 3)
+                        if (yt.youTurnPhase != 10)
                         {
-                            if (crossTrackError > 500)
+                            if (crossTrackError > 800)
                             {
                                 yt.ResetCreatedYouTurn();
                             }
@@ -973,9 +967,9 @@ namespace AgOpenGPS
                                 else yt.BuildCurveDubinsYouTurn(yt.isYouTurnRight, pivotAxlePos);
                             }
 
-                            if (yt.uTurnStyle == 0 && yt.youTurnPhase == 3)
+                            if (yt.uTurnStyle == 0 && yt.youTurnPhase == 10)
                             {
-                                yt.SmoothYouTurn(yt.uTurnSmoothing);
+                                yt.SmoothYouTurn(4);
                             }
 
                             if (yt.isTurnCreationTooClose && !yt.turnTooCloseTrigger)
@@ -987,7 +981,7 @@ namespace AgOpenGPS
                         else //wait to trigger the actual turn since its made and waiting
                         {
                             //distance from current pivot to first point of youturn pattern
-                            distancePivotToTurnLine = glm.Distance(yt.ytList[5], pivotAxlePos);
+                            if (yt.ytList.Count > 5) distancePivotToTurnLine = glm.Distance(yt.ytList[2], pivotAxlePos);
 
                             if ((distancePivotToTurnLine <= 20.0) && (distancePivotToTurnLine >= 18.0) && !yt.isYouTurnTriggered)
 
@@ -1057,7 +1051,7 @@ namespace AgOpenGPS
             //stop the timer and calc how long it took to do calcs and draw
             frameTimeRough = (double)(swFrame.ElapsedTicks*1000) / (double)System.Diagnostics.Stopwatch.Frequency;
 
-            if (frameTimeRough > 50) frameTimeRough = 50;
+            if (frameTimeRough > 80) frameTimeRough = 80;
             frameTime = frameTime * 0.90 + frameTimeRough * 0.1;
         }
 
@@ -1080,8 +1074,10 @@ namespace AgOpenGPS
                 sbGrid.Append(pivotAxlePos.easting.ToString("N2", CultureInfo.InvariantCulture) + ","
                     + pivotAxlePos.northing.ToString("N2", CultureInfo.InvariantCulture) + ","
                     + pivotAxlePos.heading.ToString("N3", CultureInfo.InvariantCulture) + ","
-                    + ahrs.imuRoll.ToString("N3", CultureInfo.InvariantCulture) + ","
-                    + pn.altitude.ToString("N2", CultureInfo.InvariantCulture) + "\r\n");
+                    + Math.Round(ahrs.imuRoll,3).ToString(CultureInfo.InvariantCulture) + ","
+                    + Math.Round(pn.altitude,3).ToString(CultureInfo.InvariantCulture) + ","
+                    + pn.fixQuality.ToString(CultureInfo.InvariantCulture) +
+                    "\r\n");
 
                 prevGridPos.easting = pivotAxlePos.easting;
                 prevGridPos.northing = pivotAxlePos.northing;
