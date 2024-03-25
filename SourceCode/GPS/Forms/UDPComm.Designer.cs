@@ -5,18 +5,11 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Globalization;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Text;
-using OpenTK.Platform.Windows;
 
 namespace AgOpenGPS
 {
     public partial class FormGPS
     {
-        //TCP/IP
-        private TcpListener _listener;
-        private List<Object> _clients;
-
         // - App Sockets  -----------------------------------------------------
         private Socket loopBackSocket;
 
@@ -41,12 +34,12 @@ namespace AgOpenGPS
                 if (data.Length == Length)
                 {
                     byte CK_A = 0;
-                    for (int j = 2; j < Length - 1; j++)
+                    for (int j = 2; j < Length-1; j++)
                     {
                         CK_A += data[j];
                     }
 
-                    if (data[Length - 1] != (byte)CK_A)
+                    if (data[Length-1] != (byte)CK_A)
                     {
                         Debug.WriteLine("CRC packet error!!");
                         return;
@@ -282,121 +275,23 @@ namespace AgOpenGPS
                 }
             }
         }
-        /*
-                //start the UDP server
-                public void StartLoopbackServer()
-                {
-                    try
-                    {
-                        // Initialise the socket
-                        loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                        loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-                        loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 15555));
-                        loopBackSocket.BeginReceiveFrom(loopBuffer, 0, loopBuffer.Length, SocketFlags.None,
-                            ref endPointLoopBack, new AsyncCallback(ReceiveAppData), null);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Load Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }*/
 
+        //start the UDP server
         public void StartLoopbackServer()
         {
             try
             {
-
-                _clients = new List<Object>();
-
-                _listener = new TcpListener(IPAddress.Any, 15555);
-                _listener.AllowNatTraversal(true);
-                _listener.Start();
-                _listener.BeginAcceptTcpClient(
-                  new AsyncCallback(HandleTcpClientAccepted), _listener);
+                // Initialise the socket
+                loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 15555));
+                loopBackSocket.BeginReceiveFrom(loopBuffer, 0, loopBuffer.Length, SocketFlags.None,
+                    ref endPointLoopBack, new AsyncCallback(ReceiveAppData), null);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Load Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void HandleTcpClientAccepted(IAsyncResult ar)
-        {
-
-            TcpClient client = _listener.EndAcceptTcpClient(ar);
-            byte[] buffer = new byte[client.ReceiveBufferSize];
-
-            TCPClientState state
-              = new TCPClientState(client, buffer);
-            lock (_clients)
-            {
-                _clients.Add(state);
-            }
-
-            NetworkStream stream = state.NetworkStream;
-            //开始异步读取数据  
-            stream.BeginRead(state.Buffer, 0, state.Buffer.Length, HandleDataReceived, state);
-
-            _listener.BeginAcceptTcpClient(
-              new AsyncCallback(HandleTcpClientAccepted), ar.AsyncState);
-        }
-
-        private void HandleDataReceived(IAsyncResult ar)
-        {
-
-            TCPClientState state = (TCPClientState)ar.AsyncState;
-            NetworkStream stream = state.NetworkStream;
-
-            int recv = 0;
-            try
-            {
-                recv = stream.EndRead(ar);
-            }
-            catch
-            {
-                recv = 0;
-            }
-
-            if (recv == 0)
-            {
-                // connection has been closed  
-                lock (_clients)
-                {
-                    _clients.Remove(state);
-                    return;
-                }
-            }
-
-            // received byte and trigger event notification  
-            byte[] buff = new byte[recv];
-            Buffer.BlockCopy(state.Buffer, 0, buff, 0, recv);
-            BeginInvoke((MethodInvoker)(() => ReceiveFromAgIO(buff)));
-
-                // continue listening for tcp datagram packets  
-                stream.BeginRead(state.Buffer, 0, state.Buffer.Length, HandleDataReceived, state);
-
-
-        }
-
-        public void Send(byte[] data)
-        {
-            foreach (TCPClientState client in _clients)
-            {
-                if (client == null)
-                    throw new ArgumentNullException("client");
-                if (!client.TcpClient.Connected)
-                {
-                    continue;
-                }
-                if (data == null)
-                    throw new ArgumentNullException("data");
-                client.TcpClient.GetStream().BeginWrite(data, 0, data.Length, SendDataEnd, client.TcpClient);
-            }
-        }
-
-        private void SendDataEnd(IAsyncResult ar)
-        {
-            ((TcpClient)ar.AsyncState).GetStream().EndWrite(ar);
         }
 
         private void DisableSim()
@@ -437,7 +332,7 @@ namespace AgOpenGPS
 
         public void SendPgnToLoop(byte[] byteData)
         {
-            if (byteData.Length > 2)
+            if (loopBackSocket != null && byteData.Length > 2)
             {
                 try
                 {
@@ -448,10 +343,8 @@ namespace AgOpenGPS
                     }
                     byteData[byteData.Length - 1] = (byte)crc;
 
-                    Send(byteData);
-                    /*
                     loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None,
-                        epAgIO, new AsyncCallback(SendAsyncLoopData), null);*/
+                        epAgIO, new AsyncCallback(SendAsyncLoopData), null);
                 }
                 catch (Exception e)
                 {
@@ -722,7 +615,7 @@ namespace AgOpenGPS
             if (keyData == Keys.Up)
             {
                 if (sim.stepDistance < 0.4 && sim.stepDistance > -0.36) sim.stepDistance += 0.01;
-                else
+                else 
                     sim.stepDistance += 0.04;
                 if (sim.stepDistance > 4) sim.stepDistance = 4;
                 return true;
@@ -1225,45 +1118,5 @@ namespace AgOpenGPS
 
         #endregion Gesture
 
-    }
-    public class TCPClientState
-    {
-        /// <summary>  
-        /// 与客户端相关的TcpClient  
-        /// </summary>  
-        public TcpClient TcpClient { get; private set; }
-
-        /// <summary>  
-        /// 获取缓冲区  
-        /// </summary>  
-        public byte[] Buffer { get; private set; }
-
-        /// <summary>  
-        /// 获取网络流  
-        /// </summary>  
-        public NetworkStream NetworkStream
-        {
-            get { return TcpClient.GetStream(); }
-        }
-
-        public TCPClientState(TcpClient tcpClient, byte[] buffer)
-        {
-            if (tcpClient == null)
-                throw new ArgumentNullException("tcpClient");
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-
-            this.TcpClient = tcpClient;
-            this.Buffer = buffer;
-        }
-        /// <summary>  
-        /// 关闭  
-        /// </summary>  
-        public void Close()
-        {
-            //关闭数据的接受和发送  
-            TcpClient.Close();
-            Buffer = null;
-        }
     }
 }
