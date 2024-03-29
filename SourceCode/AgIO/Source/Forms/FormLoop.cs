@@ -138,6 +138,7 @@ namespace AgIO
             lblIMUComm.Text = "";
             lblMod1Comm.Text = "";
             lblMod2Comm.Text = "";
+            sPing.Text = "";
 
             //set baud and port from last time run
             baudRateGPS = Settings.Default.setPort_baudRateGPS;
@@ -457,7 +458,17 @@ namespace AgIO
 
             DoTraffic();
 
+            int crc = 0;
+            for (int i = 2; i + 1 < helloFromAgIO.Length; i++)
+            {
+                crc += helloFromAgIO[i];
+            }
+            helloFromAgIO[helloFromAgIO.Length - 1] = (byte)crc;
+
             //send a hello to modules
+
+            sPingTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             SendUDPMessage(helloFromAgIO, epModule);
 
             if (isLogNMEA)
@@ -545,7 +556,7 @@ namespace AgIO
                 {
                     if (!spIMU.IsOpen)
                     {
-                        byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 83 };
+                        byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 83, 0x0D, 0x0A };
 
                         //tell AOG IMU is disconnected
                         SendToLoopBackMessageAOG(imuClose);

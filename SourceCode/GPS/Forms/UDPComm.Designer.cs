@@ -30,22 +30,24 @@ namespace AgOpenGPS
         {
             if (data.Length > 4 && data[0] == 0x80 && data[1] == 0x81)
             {
-                int Length = Math.Max((data[4]) + 5, 5);
-                if (data.Length > Length)
+                int Length = Math.Max((data[4]) + 6, 5);
+                if (data.Length == Length)
                 {
                     byte CK_A = 0;
-                    for (int j = 2; j < Length; j++)
+                    for (int j = 2; j < Length-1; j++)
                     {
                         CK_A += data[j];
                     }
 
-                    if (data[Length] != (byte)CK_A)
+                    if (data[Length-1] != (byte)CK_A)
                     {
+                        Debug.WriteLine("CRC packet error!!");
                         return;
                     }
                 }
                 else
                 {
+                    Debug.WriteLine("Packet lenght error!!");
                     return;
                 }
 
@@ -104,7 +106,7 @@ namespace AgOpenGPS
                                     ahrs.imuRoll = temp - ahrs.rollZero;
                                 }
                                 if (temp == float.MinValue)
-                                    ahrs.imuRoll = 0;                               
+                                    ahrs.imuRoll = 0;
 
                                 //altitude in meters
                                 temp = BitConverter.ToSingle(data, 37);
@@ -160,8 +162,8 @@ namespace AgOpenGPS
 
                                 if (isLogNMEA)
                                     pn.logNMEASentence.Append(
-                                        DateTime.UtcNow.ToString("mm:ss.ff",CultureInfo.InvariantCulture)+ " " +
-                                        Lat.ToString("N7") + " " + Lon.ToString("N7") );
+                                        DateTime.UtcNow.ToString("mm:ss.ff", CultureInfo.InvariantCulture) + " " +
+                                        Lat.ToString("N7") + " " + Lon.ToString("N7"));
 
                                 UpdateFixPosition();
                             }
@@ -176,13 +178,13 @@ namespace AgOpenGPS
                             //Heading
                             ahrs.imuHeading = (Int16)((data[6] << 8) + data[5]);
                             ahrs.imuHeading *= 0.1;
-                            
+
                             //Roll
                             double rollK = (Int16)((data[8] << 8) + data[7]);
 
                             if (ahrs.isRollInvert) rollK *= -0.1;
                             else rollK *= 0.1;
-                            rollK -= ahrs.rollZero;                           
+                            rollK -= ahrs.rollZero;
                             ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
 
                             //Angular velocity
@@ -249,7 +251,7 @@ namespace AgOpenGPS
                         }
 
                     case 250:
-                        {                            
+                        {
                             if (data.Length != 14)
                                 break;
                             mc.sensorData = data[5];
@@ -269,7 +271,7 @@ namespace AgOpenGPS
 
                             break;
                         }
-                     #endregion
+                        #endregion
                 }
             }
         }

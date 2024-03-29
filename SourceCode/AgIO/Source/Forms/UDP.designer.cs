@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
@@ -8,7 +9,7 @@ using System.Windows.Forms;
 namespace AgIO
 {
     public class CTraffic
-    {     
+    {
         public int cntrGPSIn = 0;
         public int cntrGPSInBytes = 0;
         public int cntrGPSOut = 0;
@@ -18,10 +19,10 @@ namespace AgIO
 
     public class CScanReply
     {
-        public string steerIP =   "";
+        public string steerIP = "";
         public string machineIP = "";
-        public string GPS_IP =    "";
-        public string IMU_IP =    "";
+        public string GPS_IP = "";
+        public string IMU_IP = "";
         public string subnetStr = "";
 
         public byte[] subnet = { 0, 0, 0 };
@@ -40,7 +41,7 @@ namespace AgIO
         // UDP Socket
         public Socket UDPSocket;
         private EndPoint endPointUDP = new IPEndPoint(IPAddress.Any, 0);
-        
+
         public bool isUDPNetworkConnected;
 
         //2 endpoints for local and 2 udp
@@ -50,7 +51,13 @@ namespace AgIO
             Properties.Settings.Default.eth_loopTwo.ToString() + "." +
             Properties.Settings.Default.eth_loopThree.ToString() + "." +
             Properties.Settings.Default.eth_loopFour.ToString()), 15555);
-        
+
+        private IPEndPoint epAgVR = new IPEndPoint(IPAddress.Parse(
+            Properties.Settings.Default.eth_loopOne.ToString() + "." +
+            Properties.Settings.Default.eth_loopTwo.ToString() + "." +
+            Properties.Settings.Default.eth_loopThree.ToString() + "." +
+            Properties.Settings.Default.eth_loopFour.ToString()), 16666);
+
         public IPEndPoint epModule = new IPEndPoint(IPAddress.Parse(
                 Properties.Settings.Default.etIP_SubnetOne.ToString() + "." +
                 Properties.Settings.Default.etIP_SubnetTwo.ToString() + "." +
@@ -66,14 +73,17 @@ namespace AgIO
 
         //scan results placed here
         public string scanReturn = "Scanning...";
-        
+
         // Data stream
         private byte[] buffer = new byte[1024];
 
         //used to send communication check pgn= C8 or 200
         private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 0x47 };
+        private long sPingTime = 0L;
 
         public IPAddress ipCurrent;
+
+
         //initialize loopback and udp network
         public void LoadUDPNetwork()
         {
@@ -86,7 +96,7 @@ namespace AgIO
                 {
                     if (IPA.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        string  data = IPA.ToString();
+                        string data = IPA.ToString();
                         lblIP.Text += IPA.ToString().Trim() + "\r\n";
                     }
                 }
@@ -121,13 +131,13 @@ namespace AgIO
         }
 
         private void LoadLoopback()
-        { 
+        {
             try //loopback
             {
                 loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
                 loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 17777));
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
+                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack,
                     new AsyncCallback(ReceiveDataLoopAsync), null);
             }
             catch (Exception ex)
@@ -213,13 +223,15 @@ namespace AgIO
                     case 0xFB: //251 steer config
                         {
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEE: //238 machine config
                         {
                             SendMachineModulePort(data, data.Length);
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEC: //236 machine config
                         {
@@ -228,7 +240,7 @@ namespace AgIO
                             break;
                         }
                 }
-            }                            
+            }
         }
 
         private void ReceiveDataLoopAsync(IAsyncResult asyncResult)
@@ -242,7 +254,7 @@ namespace AgIO
                 Array.Copy(buffer, localMsg, msgLen);
 
                 // Listen for more connections again...
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
+                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack,
                     new AsyncCallback(ReceiveDataLoopAsync), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromLoopBack(localMsg)));
@@ -267,11 +279,11 @@ namespace AgIO
                     if (epNtrip != null && endPoint.Port == epNtrip.Port)
                     {
                         if (isNTRIPLogOn)
-                            logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
+                            logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
                     }
                     else
                     {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
                     }
                 }
 
@@ -321,18 +333,57 @@ namespace AgIO
                 byte[] localMsg = new byte[msgLen];
                 Array.Copy(buffer, localMsg, msgLen);
 
-                // Listen for more connections again...
-                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP, 
-                    new AsyncCallback(ReceiveDataUDPAsync), null);
+                if (msgLen > 6 && msgLen == localMsg[4] + 6 && localMsg[0] == 128 && localMsg[1] == 129)
+                {
 
-                BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(localMsg)));
+                    byte CK_A = 0;
+                    for (int j = 2; j < msgLen - 1; j++)
+                    {
+                        CK_A += localMsg[j];
+                    }
+
+
+                    if (localMsg[msgLen - 1] == (byte)CK_A)
+                    {
+
+                        BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(localMsg)))));
+                    }
+                    else
+                    {
+                        Debug.WriteLine("CRC error");
+                    }
+                }
+                else if (msgLen > 10)
+                {
+                    traffic.cntrGPSOut += msgLen;
+                    rawBuffer += Encoding.ASCII.GetString(localMsg);
+
+                    BeginInvoke((MethodInvoker)(() => BeginInvoke((MethodInvoker)(() => ParseNMEA(ref rawBuffer)))));
+
+                    if (isUDPMonitorOn && isGPSLogOn)
+                    {
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + Encoding.ASCII.GetString(localMsg) + "\r\n");
+                    }
+                }
+
+
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //WriteErrorLog("UDP Recv data " + e.ToString());
-                //MessageBox.Show("ReceiveData Error: " + e.Message, "UDP Server", MessageBoxButtons.OK,
-                //MessageBoxIcon.Error);
+                Debug.Write(ex.Message);
+                Debug.Write(ex.StackTrace);
+            }
+            try
+            {
+                // Listen for more connections again...
+                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP,
+                new AsyncCallback(ReceiveDataUDPAsync), null);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write(ex.Message);
+                Debug.Write(ex.StackTrace);
             }
         }
 
@@ -346,9 +397,10 @@ namespace AgIO
                     SendToLoopBackMessageAOG(data);
 
                     //check for Scan and Hello
-                    if (data[3] == 126 && data.Length == 11)
+                    if (data[3] == 126)
                     {
                         traffic.helloFromAutoSteer = 0;
+                        sPing.Text = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - sPingTime).ToString();
                         if (isViewAdvanced)
                         {
                             double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
@@ -360,7 +412,7 @@ namespace AgIO
                         }
                     }
 
-                    else if (data[3] == 123 && data.Length == 11)
+                    else if (data[3] == 123)
                     {
                         traffic.helloFromMachine = 0;
 
@@ -371,11 +423,12 @@ namespace AgIO
                         }
                     }
 
-                    else if (data[3] == 121 && data.Length == 11)
+                    else if (data[3] == 121)
+                    {
                         traffic.helloFromIMU = 0;
-
+                    }
                     //scan Reply
-                    else if (data[3] == 203 && data.Length == 13) //
+                    else if (data[3] == 203) //
                     {
                         if (data[2] == 126)  //steer module
                         {
@@ -436,21 +489,9 @@ namespace AgIO
 
                     if (isUDPMonitorOn)
                     {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPointUDP.ToString() + "\t" + " < " + data[3].ToString() + "\r\n");
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPointUDP.ToString() + "\t" + " < " + data[3].ToString() + "\r\n");
                     }
 
-                } // end of pgns
-
-                else if (data[0] == 36 && (data[1] == 71 || data[1] == 80 || data[1] == 75))
-                {
-                    traffic.cntrGPSOut += data.Length;
-                    rawBuffer += Encoding.ASCII.GetString(data);
-                    ParseNMEA(ref rawBuffer);
-
-                    if (isUDPMonitorOn && isGPSLogOn)
-                    {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + System.Text.Encoding.ASCII.GetString(data));
-                    }
                 }
             }
             catch

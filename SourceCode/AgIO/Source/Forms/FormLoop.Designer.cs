@@ -101,6 +101,7 @@ namespace AgIO
             this.btnRelayTest = new System.Windows.Forms.Button();
             this.btnUDP = new System.Windows.Forms.Button();
             this.btnGPSData = new System.Windows.Forms.Button();
+            this.sPing = new System.Windows.Forms.Label();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
@@ -1093,6 +1094,20 @@ namespace AgIO
             this.btnGPSData.UseVisualStyleBackColor = false;
             this.btnGPSData.Click += new System.EventHandler(this.btnGPSData_Click);
             // 
+            // sPing
+            // 
+            this.sPing.AutoSize = true;
+            this.sPing.BackColor = System.Drawing.Color.Transparent;
+            this.sPing.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.sPing.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.sPing.Location = new System.Drawing.Point(330, 174);
+            this.sPing.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.sPing.Name = "sPing";
+            this.sPing.Size = new System.Drawing.Size(26, 18);
+            this.sPing.TabIndex = 523;
+            this.sPing.Text = "---";
+            this.sPing.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+
             // FormLoop
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 18F);
@@ -1100,6 +1115,7 @@ namespace AgIO
             this.BackColor = System.Drawing.Color.Gainsboro;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(734, 475);
+            this.Controls.Add(this.sPing);
             this.Controls.Add(this.btnHelp);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.lblSkipCounter);
@@ -1245,6 +1261,7 @@ namespace AgIO
         private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.ToolStripMenuItem toolStripSerialMonitor;
         private System.Windows.Forms.ToolStripMenuItem toolStripUDPMonitor;
+        private System.Windows.Forms.Label sPing;
     }
 }
 
