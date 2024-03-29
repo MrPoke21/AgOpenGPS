@@ -123,7 +123,7 @@ namespace AgIO
             //small view
             this.Width = 428;
 
-            LoadLoopback();
+            //LoadLoopback();
 
             isSendNMEAToUDP = Properties.Settings.Default.setUDP_isSendNMEAToUDP;
 
@@ -328,7 +328,7 @@ namespace AgIO
             Settings.Default.setPort_wasRtcmConnected = wasRtcmConnectedLastRun;
 
             Settings.Default.Save();
-
+            /*
             if (loopBackSocket != null)
             {
                 try
@@ -345,7 +345,7 @@ namespace AgIO
                     UDPSocket.Shutdown(SocketShutdown.Both);
                 }
                 finally { UDPSocket.Close(); }
-            }
+            }*/
         }
 
         private void oneSecondLoopTimer_Tick(object sender, EventArgs e)

@@ -112,6 +112,8 @@ namespace AgOpenGPS
 
         public int minSteerSpeedTimer = 0;
 
+        public long ping = 0;
+
         public void UpdateFixPosition()
         {
             //swFrame.Stop();
@@ -916,7 +918,7 @@ namespace AgOpenGPS
 
 
             }
-
+            ping = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             //out serial to autosteer module  //indivdual classes load the distance and heading deltas 
             SendPgnToLoop(p_254.pgn);
 

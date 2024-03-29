@@ -214,6 +214,7 @@ namespace AgOpenGPS
                         }
                     case 253: //return from autosteer module
                         {
+                            networkPing = DateTimeOffset.Now.ToUnixTimeMilliseconds() - ping;
                             //Steer angle actual
                             if (data.Length != 14)
                                 break;

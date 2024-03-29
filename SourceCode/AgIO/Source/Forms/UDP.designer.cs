@@ -35,8 +35,8 @@ namespace AgIO
     public partial class FormLoop
     {
         // loopback Socket
-        private Socket loopBackSocket;
-        private EndPoint endPointLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
+       // private Socket loopBackSocket;
+       // private EndPoint endPointLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
 
         // UDP Socket
         public Socket UDPSocket;
@@ -129,7 +129,7 @@ namespace AgIO
                 lblIP.Text = "Error";
             }
         }
-
+        /*
         private void LoadLoopback()
         {
             try //loopback
@@ -145,13 +145,13 @@ namespace AgIO
                 //lblStatus.Text = "Error";
                 MessageBox.Show("Load Error: " + ex.Message, "Loopback Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
+        }*/
 
         #region Send LoopBack
 
         private void SendToLoopBackMessageAOG(byte[] byteData)
         {
-            SendDataToLoopBack(byteData, epAgOpen);
+            //SendDataToLoopBack(byteData, epAgOpen);
         }
 
         private void SendDataToLoopBack(byte[] byteData, IPEndPoint endPoint)
@@ -161,8 +161,8 @@ namespace AgIO
                 if (byteData.Length != 0)
                 {
                     // Send packet to AgVR
-                    loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None, endPoint,
-                        new AsyncCallback(SendDataLoopAsync), null);
+                   // loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None, endPoint,
+                        //new AsyncCallback(SendDataLoopAsync), null);
                 }
             }
             catch (Exception ex)
@@ -175,7 +175,7 @@ namespace AgIO
         {
             try
             {
-                loopBackSocket.EndSend(asyncResult);
+                //loopBackSocket.EndSend(asyncResult);
             }
             catch (Exception ex)
             {
@@ -246,7 +246,7 @@ namespace AgIO
         private void ReceiveDataLoopAsync(IAsyncResult asyncResult)
         {
             try
-            {
+            {/*
                 // Receive all data
                 int msgLen = loopBackSocket.EndReceiveFrom(asyncResult, ref endPointLoopBack);
 
@@ -258,6 +258,7 @@ namespace AgIO
                     new AsyncCallback(ReceiveDataLoopAsync), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromLoopBack(localMsg)));
+                */
             }
             catch (Exception)
             {
