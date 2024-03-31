@@ -79,7 +79,6 @@ namespace AgIO
 
         //used to send communication check pgn= C8 or 200
         private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 0x47 };
-        private long sPingTime = 0L;
 
         public IPAddress ipCurrent;
 
@@ -401,7 +400,6 @@ namespace AgIO
                     if (data[3] == 126)
                     {
                         traffic.helloFromAutoSteer = 0;
-                        sPing.Text = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - sPingTime).ToString();
                         if (isViewAdvanced)
                         {
                             double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
