@@ -16,7 +16,6 @@ using System.Media;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Resources;
-using System.Security.Cryptography;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -257,7 +256,6 @@ namespace AgOpenGPS
         public CWindowsSettingsBrightnessController displayBrightness;
 
         #endregion // Class Props and instances
-
 
         public FormGPS()
         {
@@ -717,7 +715,8 @@ namespace AgOpenGPS
             NoGPS, ZoomIn48, ZoomOut48, 
             Pan, MenuHideShow, 
             ToolWheels, Tire, TramDot,
-            RateMap1, RateMap2, RateMap3
+            RateMap1, RateMap2, RateMap3, 
+            YouTurnU, YouTurnH
         }
 
         public void LoadGLTextures()
@@ -738,7 +737,8 @@ namespace AgOpenGPS
                 Resources.z_NoGPS, Resources.ZoomIn48, Resources.ZoomOut48, 
                 Resources.Pan, Resources.MenuHideShow,
                 Resources.z_Tool, Resources.z_Tire, Resources.z_TramOnOff, 
-                Resources.z_RateMap1, Resources.z_RateMap2, Resources.z_RateMap3
+                Resources.z_RateMap1, Resources.z_RateMap2, Resources.z_RateMap3,
+                Resources.YouTurnU, Resources.YouTurnH
             };
 
             texture = new uint[oglTextures.Length];
@@ -889,7 +889,7 @@ namespace AgOpenGPS
             this.menustripLanguage.Enabled = false;
             panelRight.Enabled = true;
             //boundaryToolStripBtn.Enabled = true;
-            isPanelABHidden = false;
+            isPanelBottomHidden = false;
 
             FieldMenuButtonEnableDisable(true);
             PanelUpdateRightAndBottom();
@@ -1092,7 +1092,7 @@ namespace AgOpenGPS
             recPath.shortestDubinsList?.Clear();
             recPath.shuttleDubinsList?.Clear();
             
-            isPanelABHidden = false;
+            isPanelBottomHidden = false;
 
             PanelsAndOGLSize();
             SetZoom();
