@@ -421,7 +421,15 @@ namespace AgOpenGPS
         {
             if (!isFirstFixPositionSet || sentenceCounter > 299)
             {
-                TimedMessageBox(2500, "No GPS", "You are lost with no GPS, Fix that First");
+                if (isJobStarted)
+                {
+                    FileSaveEverythingBeforeClosingField();
+                    TimedMessageBox(2500, gStr.gsField, "Field is now closed");
+                }
+                else
+                {
+                    TimedMessageBox(2500, "No GPS", "No GPS Position Found");
+                }
                 return;
             }
 
@@ -519,20 +527,7 @@ namespace AgOpenGPS
 
             trk.idx = -1;
 
-            //if (isJobStarted && trk.gArr.Count > 0)
-            //{
-            //    for (int i = 0; i < trk.gArr.Count; i++)
-            //    {
-            //        if (trk.gArr[i].isVisible)
-            //        {
-            //            trk.idx = i;
-            //            break;
-            //        }
-            //    }
-            //}
-
             PanelUpdateRightAndBottom();
-
         }
         public void FileSaveEverythingBeforeClosingField()
         {
@@ -562,6 +557,7 @@ namespace AgOpenGPS
             FileSaveBoundary();
             FileSaveSections();
             FileSaveContour();
+            FileSaveTracks();
 
             ExportFieldAs_KML();
             ExportFieldAs_ISOXMLv3();
@@ -1395,6 +1391,11 @@ namespace AgOpenGPS
             SetLanguage("lt", true);
         }
 
+        private void menuLanguageChinese_Click(object sender, EventArgs e)
+        {
+            SetLanguage("zh-CHS", true);
+        }
+
 
         private void SetLanguage(string lang, bool Restart)
         {
@@ -1422,6 +1423,7 @@ namespace AgOpenGPS
             menuLanguageLithuanian.Checked = false;
             menuLanguageFinnish.Checked = false;
             menuLanguageLatvian.Checked = false;
+            menuLanguageChinese.Checked = false;
 
             menuLanguageTest.Checked = false;
 
@@ -1493,6 +1495,10 @@ namespace AgOpenGPS
 
                 case "fi":
                     menuLanguageFinnish.Checked = true;
+                    break;
+
+                case "zh-CHS":
+                    menuLanguageChinese.Checked = true;
                     break;
 
                 default:
@@ -1648,10 +1654,8 @@ namespace AgOpenGPS
             Properties.Settings.Default.set_youSkipWidth = yt.rowSkipsWidth;
             Properties.Settings.Default.Save();
         }
-        private void cboxpRowWidth_Click(object sender, EventArgs e)
-        {
-        }
-        private void btnHeadlandOnOff_Click(object sender, EventArgs e)
+        private void 
+            btnHeadlandOnOff_Click(object sender, EventArgs e)
         {
             bnd.isHeadlandOn = !bnd.isHeadlandOn;
             if (bnd.isHeadlandOn)
@@ -2129,4 +2133,5 @@ namespace AgOpenGPS
         private ToolStripMenuItem headingChartToolStripMenuItem;
         private ToolStripMenuItem xTEChartToolStripMenuItem;
     }//end class
+
 }//end namespace

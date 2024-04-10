@@ -890,6 +890,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>gStr.uk.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="gStr.zh-CHS.resx" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <SubType>Designer</SubType>
@@ -940,6 +941,8 @@
     <None Include="btnImages\ABPivot.png" />
     <None Include="btnImages\TrackPivot.png" />
     <None Include="btnImages\Config\ConF_SoundSections.png" />
+    <None Include="btnImages\Config\ConD_LogElevation.png" />
+    <None Include="btnImages\Config\ConT_TramOverrideDisplay.png" />
     <Content Include="Resources\TF012.WAV" />
     <None Include="Resources\SectionOn.wav" />
     <None Include="Resources\SectionOff.wav" />
