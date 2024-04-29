@@ -50,7 +50,7 @@ namespace AgIO
         public bool isGPSSentencesOn = false, isSendNMEAToUDP;
 
         //timer variables
-        public double secondsSinceStart, twoSecondTimer, tenSecondTimer, threeMinuteTimer;
+        public double secondsSinceStart, twoSecondTimer, tenSecondTimer, threeMinuteTimer, pingSecondsStart;
 
         public string lastSentence;
 
@@ -121,7 +121,7 @@ namespace AgIO
             //small view
             this.Width = 428;
 
-            //LoadLoopback();
+            LoadLoopback();
 
             isSendNMEAToUDP = Properties.Settings.Default.setUDP_isSendNMEAToUDP;
 
@@ -325,7 +325,7 @@ namespace AgIO
             Settings.Default.setPort_wasRtcmConnected = wasRtcmConnectedLastRun;
 
             Settings.Default.Save();
-            /*
+
             if (loopBackSocket != null)
             {
                 try
@@ -342,7 +342,7 @@ namespace AgIO
                     UDPSocket.Shutdown(SocketShutdown.Both);
                 }
                 finally { UDPSocket.Close(); }
-            }*/
+            }
         }
 
         private void oneSecondLoopTimer_Tick(object sender, EventArgs e)
@@ -455,16 +455,15 @@ namespace AgIO
 
             DoTraffic();
 
-            int crc = 0;
-            for (int i = 2; i + 1 < helloFromAgIO.Length; i++)
+            if (isViewAdvanced)
             {
-                crc += helloFromAgIO[i];
+                pingSecondsStart = (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds;
+                lblPing.Text = lblPingMachine.Text = "*";
             }
-            helloFromAgIO[helloFromAgIO.Length - 1] = (byte)crc;
 
             //send a hello to modules
-
             SendUDPMessage(helloFromAgIO, epModule);
+
 
             //if (isLogNMEA)
             //{
@@ -475,8 +474,8 @@ namespace AgIO
             //    logNMEASentence.Clear();
             //}
 
-            if (focusSkipCounter < 310) lblSkipCounter.Text = focusSkipCounter.ToString();
-            else lblSkipCounter.Text = "On";
+            //if (focusSkipCounter < 310) lblSkipCounter.Text = focusSkipCounter.ToString();
+            //else lblSkipCounter.Text = "On";
         }
 
         private void TenSecondLoop()
@@ -551,7 +550,7 @@ namespace AgIO
                 {
                     if (!spIMU.IsOpen)
                     {
-                        byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 83, 0x0D, 0x0A };
+                        byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 83 };
 
                         //tell AOG IMU is disconnected
                         SendToLoopBackMessageAOG(imuClose);

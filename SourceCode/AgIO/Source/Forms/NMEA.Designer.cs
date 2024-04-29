@@ -207,12 +207,11 @@ namespace AgIO
                 {
                     ParseTRA();
                 }
-                //TODO: Skytraq also sends this data for fixed base. Thus it returns a false result. It is necessary to check dual mode. But this data is processed in the ECU.
-                /* 
-                else if (words[0] == "$PSTI" && words[1] == "032")
+
+                else if (words[0] == "$PSTI" && (words[1] == "032" || words[1] == "035") )
                 {
                     ParseSTI032(); //there is also an $PSTI,030,... wich contains different data!
-                }*/
+                }
             }// while still data
 
             if (isNMEAToSend)
@@ -225,7 +224,7 @@ namespace AgIO
                 nmeaPGN[1] = 0x81;
                 nmeaPGN[2] = 0x7C;
                 nmeaPGN[3] = 0xD6;
-                nmeaPGN[4] = 0x33; // nmea total array count
+                nmeaPGN[4] = 0x33; // nmea total array count minus 6
 
                 //longitude
                 Buffer.BlockCopy(BitConverter.GetBytes(longitudeSend), 0, nmeaPGN, 5, 8);
@@ -281,7 +280,7 @@ namespace AgIO
 
 
                 int CK_A = 0;
-                for (int j = 2; j < nmeaPGN.Length-1; j++)
+                for (int j = 2; j < nmeaPGN.Length; j++)
                 {
                     CK_A += nmeaPGN[j];
                 }
@@ -810,7 +809,6 @@ namespace AgIO
                 headingTrueDualData = headingTrueDual;
             }
         }
-
 
         private void ParseSTI032() //heading and roll from SkyTraQ receiver
         {
