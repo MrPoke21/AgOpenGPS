@@ -962,6 +962,7 @@
     <None Include="btnImages\AntennaLeftOffset.png" />
     <None Include="btnImages\AntennaRightOffset.png" />
     <None Include="btnImages\AntennaNoOffset.png" />
+	  <!--
     <Content Include="ConfigOMatic\RJCP.SerialPortStream.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -982,7 +983,7 @@
     </Content>
     <Content Include="ConfigOMatic\ubxfwupdate.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </Content>-->
     <None Include="btnImages\VR.png" />
     <None Include="btnImages\Background.png" />
     <None Include="btnImages\ABPivot.png" />
@@ -991,6 +992,7 @@
     <None Include="btnImages\Config\ConD_LogElevation.png" />
     <None Include="btnImages\Config\ConT_TramOverrideDisplay.png" />
     <None Include="btnImages\GridRotate.png" />
+	  <!--
     <Content Include="ConfigOMatic\AOGConfigOMatic.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1023,7 +1025,7 @@
     </Content>
     <Content Include="ConfigOMatic\MoreLinq.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </Content> -->
     <Content Include="Resources\TF012.WAV" />
     <None Include="Resources\SectionOn.wav" />
     <None Include="Resources\SectionOff.wav" />
