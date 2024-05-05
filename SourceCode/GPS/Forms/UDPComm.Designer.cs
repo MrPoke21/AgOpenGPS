@@ -276,7 +276,6 @@ namespace AgOpenGPS
                 }
             }
         }
-        /*
 
         //start the UDP server
         public void StartLoopbackServer()
