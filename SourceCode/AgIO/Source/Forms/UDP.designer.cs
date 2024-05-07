@@ -525,14 +525,14 @@ namespace AgIO
                         ageX100 = BitConverter.ToUInt16(data, 46);
                         ageData = ageX100 * 0.01f;
 
-                        imuHeading = (ushort)(BitConverter.ToUInt16(data, 48));
-                        imuHeadingData = imuHeading * 0.1f;
+                        imuHeading = (BitConverter.ToSingle(data, 48));
+                        imuHeadingData = imuHeading;
 
-                        imuRoll = (short)(BitConverter.ToInt16(data, 50));
-                        imuRollData = imuRoll*0.1f;
+                        imuRoll = BitConverter.ToSingle(data, 52);
+                        imuRollData = imuRoll;
 
-                        imuPitch = BitConverter.ToInt16(data, 52);
-                        imuPitchData = imuPitch * 0.1f;
+                        imuPitch = BitConverter.ToSingle(data, 56);
+                        imuPitchData = imuPitch;
 
                        // imuYaw = BitConverter.ToInt16(data, 54);
 
