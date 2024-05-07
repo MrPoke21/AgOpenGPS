@@ -24,9 +24,9 @@ namespace AgIO
             ageX100 = ushort.MaxValue;
 
         //imu data
-        public ushort imuHeadingData, imuHeading = ushort.MaxValue;
-        public short imuRollData, imuRoll = short.MaxValue, imuPitchData, imuPitch = short.MaxValue, 
-            imuYawRateData, imuYawRate = short.MaxValue;
+        public float imuHeadingData, imuHeading = ushort.MaxValue;
+        public float imuRollData, imuRoll = float.MaxValue, imuPitchData, imuPitch = float.MaxValue, 
+            imuYawRateData, imuYawRate = float.MaxValue;
 
         public byte fixQualityData, fixQuality = byte.MaxValue;
 
@@ -770,19 +770,19 @@ namespace AgIO
                 speedData = speed;
 
                 //imu heading
-                ushort.TryParse(words[12], NumberStyles.Float, CultureInfo.InvariantCulture, out imuHeading);
+                float.TryParse(words[12], NumberStyles.Float, CultureInfo.InvariantCulture, out imuHeading);
                 imuHeadingData = imuHeading;
 
                 //roll
-                short.TryParse(words[13], NumberStyles.Float, CultureInfo.InvariantCulture, out imuRoll);
+                float.TryParse(words[13], NumberStyles.Float, CultureInfo.InvariantCulture, out imuRoll);
                 imuRollData = imuRoll;
 
                 //Pitch
-                short.TryParse(words[14], NumberStyles.Float, CultureInfo.InvariantCulture, out imuPitch);
+                float.TryParse(words[14], NumberStyles.Float, CultureInfo.InvariantCulture, out imuPitch);
                 imuPitchData = imuPitch;
 
                 //YawRate
-                short.TryParse(words[15], NumberStyles.Float, CultureInfo.InvariantCulture, out imuYawRate);
+                float.TryParse(words[15], NumberStyles.Float, CultureInfo.InvariantCulture, out imuYawRate);
                 imuYawRateData = imuYawRate;
 
                 //always send because its probably the only one.

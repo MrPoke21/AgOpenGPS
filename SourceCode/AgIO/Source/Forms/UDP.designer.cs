@@ -500,6 +500,44 @@ namespace AgIO
                             scanReply.isNewGPS = true;
                         }
                     }
+                    //GPS DATA
+                    else if (data[3] == 0xD6)
+                    {
+                        longitude = BitConverter.ToDouble(data, 5);
+
+                        latitude = BitConverter.ToDouble(data, 13);
+
+                        speed = BitConverter.ToSingle(data, 29);
+                        speedData = speed;
+
+                        altitude = BitConverter.ToSingle(data, 37);
+                        altitudeData = altitude;
+
+                        satellitesTracked = BitConverter.ToUInt16(data, 41);
+                        satellitesData = satellitesTracked;
+
+                        fixQuality = data[43];
+                        fixQualityData = fixQuality;
+
+                        hdopX100 = BitConverter.ToUInt16(data, 44);
+                        hdopData = hdopX100 * 0.01f;
+
+                        ageX100 = BitConverter.ToUInt16(data, 46);
+                        ageData = ageX100 * 0.01f;
+
+                        imuHeading = (ushort)(BitConverter.ToUInt16(data, 48));
+                        imuHeadingData = imuHeading * 0.1f;
+
+                        imuRoll = (short)(BitConverter.ToInt16(data, 50));
+                        imuRollData = imuRoll*0.1f;
+
+                        imuPitch = BitConverter.ToInt16(data, 52);
+                        imuPitchData = imuPitch * 0.1f;
+
+                       // imuYaw = BitConverter.ToInt16(data, 54);
+
+                        SendToLoopBackMessageAOG(data);
+                    }
                     else
                     {
                         //module return via udp sent to AOG
