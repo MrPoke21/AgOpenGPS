@@ -136,11 +136,10 @@ namespace AgOpenGPS
                                 }
 
                                 float imuRol = BitConverter.ToSingle(data, 52);
-                                if (imuRol != short.MaxValue)
+                                if (imuRol != float.MaxValue)
                                 {
                                     double rollK = imuRol;
                                     if (ahrs.isRollInvert) rollK *= -1f;
-                                    else rollK *= 0.1f;
                                     rollK -= ahrs.rollZero;
                                     ahrs.imuRoll = rollK;
 
@@ -148,7 +147,7 @@ namespace AgOpenGPS
                                 }
 
                                 float imuPich = BitConverter.ToSingle(data, 56);
-                                if (imuPich != short.MaxValue)
+                                if (imuPich != float.MaxValue)
                                 {
                                     ahrs.imuPitch = imuPich;
                                 }

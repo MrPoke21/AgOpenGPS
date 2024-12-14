@@ -318,10 +318,14 @@ namespace AgIO
                 {
                     spSteerModule.Write(items, 0, numItems);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     CloseSteerModulePort();
                 }
+            }
+            else
+            {
+                OpenSteerModulePort();
             }
         }
 
@@ -339,6 +343,7 @@ namespace AgIO
 
             try
             {
+                System.Threading.Thread.Sleep(1000); // 500 was not enough
                 spSteerModule.Open();
                 //short delay for the use of mega2560, it is working in debugmode with breakpoint
                 System.Threading.Thread.Sleep(1000); // 500 was not enough
@@ -348,7 +353,7 @@ namespace AgIO
             {
                 //WriteErrorLog("Opening Machine Port" + e.ToString());
 
-                MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
+                //MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
 
 
                 Properties.Settings.Default.setPort_wasSteerModuleConnected = false;
