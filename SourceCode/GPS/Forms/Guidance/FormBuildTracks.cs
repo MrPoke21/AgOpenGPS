@@ -1,14 +1,11 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.Xml;
-using static System.Windows.Forms.LinkLabel;
 
 namespace AgOpenGPS
 {
@@ -78,7 +75,6 @@ namespace AgOpenGPS
 
             originalLine = mf.trk.idx;
 
-            mf.curve.isMakingCurve = false;
             selectedItem = -1;
             Location = Properties.Settings.Default.setWindow_buildTracksLocation;
 
@@ -101,6 +97,12 @@ namespace AgOpenGPS
             nudHeadingLatLonPlus.Value = 0;
 
             UpdateTable();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormBuildTracks_FormClosing(object sender, FormClosingEventArgs e)
@@ -125,7 +127,10 @@ namespace AgOpenGPS
             isClosing = true;
             mf.curve.desList?.Clear();
 
-            if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+            if (mf.isBtnAutoSteerOn)
+            {
+                mf.btnAutoSteer.PerformClick();
+            }
             if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
 
             mf.trk.gArr.Clear();
@@ -191,7 +196,10 @@ namespace AgOpenGPS
                 {
                     idx = -1;
                     mf.DisableYouTurnButtons();
-                    if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+                    if (mf.isBtnAutoSteerOn)
+                    {
+                        mf.btnAutoSteer.PerformClick();
+                    }
                     Close();
                 }
             }
@@ -241,9 +249,9 @@ namespace AgOpenGPS
                     FlatStyle = FlatStyle.Flat,
             };
 
-                if (mf.trk.gArr[i].mode == (int)TrackMode.AB)
+                if (mf.trk.gArr[i].mode == TrackMode.AB)
                     b.Image = Properties.Resources.TrackLine;
-                else if (mf.trk.gArr[i].mode == (int)TrackMode.waterPivot)
+                else if (mf.trk.gArr[i].mode == TrackMode.waterPivot)
                     b.Image = Properties.Resources.TrackPivot;
                 else
                     b.Image = Properties.Resources.TrackCurve;
@@ -393,7 +401,7 @@ namespace AgOpenGPS
             {
                 idx = selectedItem;
 
-                if (mf.trk.gArr[idx].mode == (int)TrackMode.AB)
+                if (mf.trk.gArr[idx].mode == TrackMode.AB)
                 {
                     vec2 bob = mf.trk.gArr[idx].ptA;
                     mf.trk.gArr[idx].ptA = mf.trk.gArr[idx].ptB;
@@ -597,24 +605,35 @@ namespace AgOpenGPS
 
         private void btnACurve_Click(object sender, System.EventArgs e)
         {
-            lblCurveExists.Text = gStr.gsDriving;
+            if (mf.curve.isMakingCurve)
+            {
+                mf.curve.desList.Add(new vec3(mf.pivotAxlePos.easting, mf.pivotAxlePos.northing, mf.pivotAxlePos.heading));
+                btnBCurve.Enabled = mf.curve.desList.Count > 3;
+            }
+            else
+            {
+                lblCurveExists.Text = gStr.gsDriving;
 
-            btnBCurve.Enabled = true;
-            btnACurve.Enabled = false;
+                btnBCurve.Enabled = true;
+                btnACurve.Enabled = false;
+                btnACurve.Image = Properties.Resources.PointAdd;
 
-            btnPausePlay.Enabled = true;
-            btnPausePlay.Visible = true;
+                btnPausePlay.Enabled = true;
+                btnPausePlay.Visible = true;
 
-            mf.curve.isMakingCurve = true;
+                mf.curve.isMakingCurve = true;
+                mf.curve.isRecordingCurve = true;
+            }
         }
 
         private void btnBCurve_Click(object sender, System.EventArgs e)
         {
             aveLineHeading = 0;
             mf.curve.isMakingCurve = false;
+            mf.curve.isRecordingCurve = false;
             panelCurve.Visible = false;
             panelName.Visible = true;
-            
+
             int cnt = mf.curve.desList.Count;
             if (cnt > 3)
             {
@@ -632,7 +651,7 @@ namespace AgOpenGPS
                     new vec2(mf.curve.desList[mf.curve.desList.Count - 1].easting,
                     mf.curve.desList[mf.curve.desList.Count - 1].northing);
 
-                mf.trk.gArr[idx].mode = (int)TrackMode.Curve;
+                mf.trk.gArr[idx].mode = TrackMode.Curve;
 
                 //calculate average heading of line
                 double x = 0, y = 0;
@@ -684,7 +703,6 @@ namespace AgOpenGPS
             }
             else
             {
-                mf.curve.isMakingCurve = false;
                 mf.curve.desList?.Clear();
 
                 panelMain.Visible = true;
@@ -698,20 +716,21 @@ namespace AgOpenGPS
 
         private void btnPausePlayCurve_Click(object sender, EventArgs e)
         {
-            if (mf.curve.isMakingCurve)
+            if (mf.curve.isRecordingCurve)
             {
-                mf.curve.isMakingCurve = false;
+                mf.curve.isRecordingCurve = false;
                 btnPausePlay.Image = Properties.Resources.BoundaryRecord;
                 //btnPausePlay.Text = gStr.gsRecord;
-                btnBCurve.Enabled = false;
+                btnACurve.Enabled = true;
             }
             else
             {
-                mf.curve.isMakingCurve = true;
+                mf.curve.isRecordingCurve = true;
                 btnPausePlay.Image = Properties.Resources.boundaryPause;
                 //btnPausePlay.Text = gStr.gsPause;
-                btnBCurve.Enabled = true;
+                btnACurve.Enabled = false;
             }
+            btnBCurve.Enabled = mf.curve.desList.Count > 3;
         }
 
         #endregion
@@ -771,12 +790,12 @@ namespace AgOpenGPS
             mf.trk.gArr[idx].ptA = new vec2(mf.ABLine.desPtA);
             mf.trk.gArr[idx].ptB = new vec2(mf.ABLine.desPtB);
 
-            mf.trk.gArr[idx].mode = (int)TrackMode.AB;
+            mf.trk.gArr[idx].mode = TrackMode.AB;
 
             mf.trk.gArr[idx].heading = mf.ABLine.desHeading;
 
             mf.ABLine.desName = "AB " +
-                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 1)).ToString(CultureInfo.InvariantCulture) + "\u00B0 " ;
+                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 5)).ToString(CultureInfo.InvariantCulture) + "\u00B0 " ;
             textBox1.Text = mf.ABLine.desName;
 
             double dist;
@@ -863,12 +882,12 @@ namespace AgOpenGPS
             mf.trk.gArr[idx].ptA = new vec2(mf.ABLine.desPtA);
             mf.trk.gArr[idx].ptB = new vec2(mf.ABLine.desPtB);
 
-            mf.trk.gArr[idx].mode = (int)TrackMode.AB;
+            mf.trk.gArr[idx].mode = TrackMode.AB;
 
             mf.trk.gArr[idx].heading = mf.ABLine.desHeading;
 
             mf.ABLine.desName = "A+" +
-                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 1)).ToString(CultureInfo.InvariantCulture) + "\u00B0 " ;
+                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 5)).ToString(CultureInfo.InvariantCulture) + "\u00B0 " ;
             textBox1.Text = mf.ABLine.desName;
 
             double dist;
@@ -986,14 +1005,14 @@ namespace AgOpenGPS
                             mf.ABLine.desName = trackName;
                         }
                         else mf.ABLine.desName = "AB " +
-                            (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 1)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
+                            (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 5)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
 
                         mf.trk.gArr.Add(new CTrk());
 
                         idx = mf.trk.gArr.Count - 1;
 
                         mf.trk.gArr[idx].heading = mf.ABLine.desHeading;
-                        mf.trk.gArr[idx].mode = (int)TrackMode.AB;
+                        mf.trk.gArr[idx].mode = TrackMode.AB;
 
                         mf.trk.gArr[idx].ptA = new vec2(mf.ABLine.desPtA);
                         mf.trk.gArr[idx].ptB = new vec2(mf.ABLine.desPtB);
@@ -1020,7 +1039,7 @@ namespace AgOpenGPS
                             new vec2(mf.curve.desList[mf.curve.desList.Count - 1].easting,
                             mf.curve.desList[mf.curve.desList.Count - 1].northing);
 
-                        mf.trk.gArr[idx].mode = (int)TrackMode.Curve;
+                        mf.trk.gArr[idx].mode = TrackMode.Curve;
 
                         //calculate average heading of line
                         double x = 0, y = 0;
@@ -1117,12 +1136,12 @@ namespace AgOpenGPS
             mf.trk.gArr[idx].ptA = new vec2(mf.ABLine.desPtA);
             mf.trk.gArr[idx].ptB = new vec2(mf.ABLine.desPtB);
 
-            mf.trk.gArr[idx].mode = (int)TrackMode.AB;
+            mf.trk.gArr[idx].mode = TrackMode.AB;
 
             mf.trk.gArr[idx].heading = mf.ABLine.desHeading;
 
             mf.ABLine.desName = "AB " +
-                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 1)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
+                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 5)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
             textBox1.Text = mf.ABLine.desName;
 
             panelLatLonLatLon.Visible = false;
@@ -1195,12 +1214,12 @@ namespace AgOpenGPS
             mf.trk.gArr[idx].ptA = new vec2(mf.ABLine.desPtA);
             mf.trk.gArr[idx].ptB = new vec2(mf.ABLine.desPtB);
 
-            mf.trk.gArr[idx].mode = (int)TrackMode.AB;
+            mf.trk.gArr[idx].mode = TrackMode.AB;
 
             mf.trk.gArr[idx].heading = mf.ABLine.desHeading;
 
             mf.ABLine.desName = "A+ " +
-                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 1)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
+                (Math.Round(glm.toDegrees(mf.ABLine.desHeading), 5)).ToString(CultureInfo.InvariantCulture) + "\u00B0 ";
             textBox1.Text = mf.ABLine.desName;
 
             panelLatLonPlus.Visible = false;
@@ -1248,7 +1267,7 @@ namespace AgOpenGPS
 
             mf.trk.gArr[idx].ptA.easting = east;
             mf.trk.gArr[idx].ptA.northing = nort;
-            mf.trk.gArr[idx].mode = (int)TrackMode.waterPivot;
+            mf.trk.gArr[idx].mode = TrackMode.waterPivot;
 
             mf.ABLine.desName = "Piv";
             textBox1.Text = mf.ABLine.desName;
@@ -1270,7 +1289,9 @@ namespace AgOpenGPS
         private void btnCancelCurve_Click(object sender, EventArgs e)
         {
             mf.curve.isMakingCurve = false;
+            mf.curve.isRecordingCurve = false;
             mf.curve.desList?.Clear();
+            mf.ABLine.isMakingABLine = false;
 
             panelMain.Visible = true;
             panelEditName.Visible = false;
@@ -1332,7 +1353,7 @@ namespace AgOpenGPS
 
             mf.trk.gArr[idx].name = textBox2.Text.Trim();
 
-            this.Size = new System.Drawing.Size(700, 450);
+            this.Size = new System.Drawing.Size(650, 480);
 
             UpdateTable();
             flp.Focus();
@@ -1340,7 +1361,7 @@ namespace AgOpenGPS
 
         public void SmoothAB(int smPts)
         {
-            //count the reference list of original curve
+            //countExit the reference list of original curve
             int cnt = mf.curve.desList.Count;
 
             //the temp array

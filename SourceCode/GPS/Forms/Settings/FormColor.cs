@@ -1,5 +1,6 @@
 ﻿//Please, if you use this, share the improvements
 
+using AgOpenGPS.Culture;
 using AgOpenGPS.Properties;
 using System;
 using System.Drawing;
@@ -31,6 +32,12 @@ namespace AgOpenGPS
             daySet = mf.isDay;
             hsbarSmooth.Value = Properties.Settings.Default.setDisplay_camSmooth;
             lblSmoothCam.Text = hsbarSmooth.Value.ToString() + "%";
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void bntOK_Click(object sender, EventArgs e)

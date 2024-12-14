@@ -19,7 +19,7 @@ namespace AgIO
         private int ntripCounter = 10;
 
         private Socket clientSocket;                      // Server connection
-        private byte[] casterRecBuffer = new byte[4096];    // Recieved data buffer
+        private byte[] casterRecBuffer = new byte[2800];    // Recieved data buffer
 
         //Send GGA back timer
         Timer tmr;
@@ -27,8 +27,6 @@ namespace AgIO
         private string mount;
         private string username;
         private string password;
-
-        private bool firstPacket = true;
 
         public string broadCasterIP;
         private int broadCasterPort;
@@ -327,7 +325,7 @@ namespace AgIO
                         isNTRIP_Connected = false;
                         isSerialPass_RequiredOn = false;
 
-                        MessageBox.Show("Error connecting to Serial Pass", $"{ex.Message}");
+                        TimedMessageBox(2000, "Error connecting to Serial Pass", $"{ex.Message}");
                     }
                 }
             }
@@ -389,8 +387,7 @@ namespace AgIO
 
                     //Build authorization string
                     string str = "GET /" + mount + " HTTP/" + htt + "\r\n";
-                    str += "Ntrip - Version: Ntrip / 2.0" + "\r\n";
-                    str += "User-Agent: NTRIP AgOpenGPSClient/20221020\r\n";
+                    str += "User-Agent: NTRIP AgOpenGPSClient/6.4\r\n";
                     str += "Authorization: Basic " + auth + "\r\n"; //This line can be removed if no authorization is needed
                                                                     //str += GGASentence; //this line can be removed if no position feedback is needed
                     str += "Accept: */*\r\nConnection: close\r\n";
@@ -411,7 +408,6 @@ namespace AgIO
             catch (Exception)
             {
                 ReconnectRequest();
-                MessageBox.Show( "NTRIP caster is not found, check your internet connection or NTRIP settings.", "Network error!");
             }
         }
 
@@ -439,9 +435,10 @@ namespace AgIO
                             {
                                 rList.Add(mess);
                                 i += (data[i + 1] << 6) + (data[i + 2])+5;
-                                if (i == data.Length-1)
+                                if (data[i + 1] != 211)
                                 {
-                                    break;
+                                    //rList.Clear();
+                                    //break;
                                 }
                             }
                             else
@@ -579,10 +576,7 @@ namespace AgIO
             try
             {
                 if (clientSocket.Connected)
-                {
-                    firstPacket = true;
                     clientSocket.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), null);
-                }
             }
             catch (Exception)
             {
@@ -600,29 +594,9 @@ namespace AgIO
                 {
                     byte[] localMsg = new byte[nBytesRec];
                     Array.Copy(casterRecBuffer, localMsg, nBytesRec);
-                    if (firstPacket)
-                    {
-                        string page = String.Empty;
-                        page = Encoding.ASCII.GetString(localMsg);
-                        if (page.IndexOf("401 UNAUTHORIZED")>0)
-                        {
-                            MessageBox.Show("NTRIP server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password).", "NTRIP UNAUTHORIZED");
-                        }
-                        else if (page.IndexOf("400 BAD REQUEST") > 0)
-                        {
-                            MessageBox.Show("Protocol parsing error.", "NTRIP Bad Request");
-                        }
-                        else if (page.StartsWith("SOURCETABLE 200 OK"))
-                        {
-                            MessageBox.Show("The mount point cannot be found, choose another one!", "NTRIP mount point error.");
-                        }
-                        firstPacket = false;
-                    }
+
                     BeginInvoke((MethodInvoker)(() => OnAddMessage(localMsg)));
-                    if (clientSocket.Connected)
-                    {
-                        clientSocket.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), null);
-                    }
+                    clientSocket.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), null);
                 }
                 else
                 {

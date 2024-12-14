@@ -16,7 +16,8 @@ namespace AgOpenGPS
 
         private bool isA = true;
         private int start = 99999, end = 99999;
-        private int bndSelect = 0, mode;
+        private int bndSelect = 0;
+        TrackMode mode = TrackMode.None;
         public List<vec3> sliceArr = new List<vec3>();
         public List<vec3> backupList = new List<vec3>();
 
@@ -38,6 +39,7 @@ namespace AgOpenGPS
 
         private void FormHeadLine_Load(object sender, EventArgs e)
         {
+            this.Text = "1: Set distance, 2: Tap Build, 3: Create Clip Lines";
             mf.hdl.idx = -1;
             //label3.Text = mf.unitsFtM +"       Tool: ";
 
@@ -84,6 +86,12 @@ namespace AgOpenGPS
             this.Top = (area.Height - this.Height) / 2;
             this.Left = (area.Width - this.Width) / 2;
             FormHeadLine_ResizeEnd(this, e);
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormHeadLine_ResizeEnd(object sender, EventArgs e)
@@ -311,7 +319,7 @@ namespace AgOpenGPS
                             sliceArr.Insert(0, pt);
                         }
 
-                        mode = (int)TrackMode.Curve;
+                        mode = TrackMode.Curve;
                     }
                     else
                     {
@@ -386,7 +394,7 @@ namespace AgOpenGPS
                         sliceArr.Insert(0, pt);
                     }
 
-                    mode = (int)TrackMode.AB;
+                    mode = TrackMode.AB;
 
                     start = 99999; end = 99999;
                 }
@@ -479,7 +487,7 @@ namespace AgOpenGPS
                 //GL.LineStipple(1, 0x7070);
                 GL.PointSize(8);
 
-                if (mode == (int)TrackMode.AB)
+                if (mode == TrackMode.AB)
                 {
                     GL.Color3(0.95f, 0.09f, 0.0f);
                 }

@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using AgOpenGPS.Culture;
+using OpenTK.Graphics.OpenGL;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -48,7 +49,7 @@ namespace AgOpenGPS
 
             mapControl.Invalidate();
 
-            if (mf.worldGrid.isGeoMap || mf.worldGrid.isRateMap)
+            if (mf.worldGrid.isGeoMap)
             {
                 cboxDrawMap.Checked = true;
                 btnGray.Visible = true;
@@ -63,6 +64,13 @@ namespace AgOpenGPS
 
             if (mf.worldGrid.isGeoMap) cboxDrawMap.Image = Properties.Resources.MappingOn;
             else cboxDrawMap.Image = Properties.Resources.MappingOff;
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
+
         }
 
         private void FormMap_FormClosing(object sender, FormClosingEventArgs e)
@@ -345,7 +353,6 @@ namespace AgOpenGPS
                 mf.FileSaveBackPic();
 
                 mf.worldGrid.isGeoMap = false;
-                mf.worldGrid.isRateMap = false;
                 btnGray.Visible = false;
                 btnBuildFieldBackground.Visible = false;
             }
@@ -373,8 +380,6 @@ namespace AgOpenGPS
             catch { }
 
             mf.worldGrid.isGeoMap = false;
-            mf.worldGrid.isRateMap = false;
-
             bingLine.Clear();
             mapControl.Markers.Clear();
             mapControl.Invalidate();
@@ -474,15 +479,13 @@ namespace AgOpenGPS
             }
 
             mf.FileSaveBackPic();
-            mf.FileSaveRateMap();
         }
 
         private void btnBuildFieldBackground_Click(object sender, EventArgs e)
         {
-            if (mf.worldGrid.isGeoMap || mf.worldGrid.isRateMap)
+            if (mf.worldGrid.isGeoMap)
             {
                 mf.worldGrid.isGeoMap = false;
-                mf.worldGrid.isRateMap = false;
                 ResetMapGrid();
             }
             SaveBackgroundImage();

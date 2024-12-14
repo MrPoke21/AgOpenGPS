@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Globalization;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace AgOpenGPS
 {
@@ -259,6 +260,30 @@ namespace AgOpenGPS
                             break;
                         }
 
+                    case 221: // DD
+                        {                    
+                            //{ 0x80, 0x81, 0x7f, 221, number bytes, seconds to display, mystery byte, 98,99,100,101, CRC };
+                            if (data.Length < 9) break;
+
+                            if (isHardwareMessages)
+                            {
+                                lblHardwareMessage.Text = System.Text.Encoding.UTF8.GetString(data, 7, data[4] - 2);
+                                lblHardwareMessage.Visible = true;
+                                hardwareLineCounter = data[5] * 10;
+
+                                //color based on byte 6
+                                if (data[6] == 0) lblHardwareMessage.BackColor = Color.Salmon;
+                                else lblHardwareMessage.BackColor = Color.Bisque;
+
+                            }
+                            else
+                            {
+                                lblHardwareMessage.Visible = false;
+                                hardwareLineCounter = 0;
+                            }
+                            break;
+                        }
+
                     #region Remote Switches
                     case 234://MTZ8302 Feb 2020
                         {
@@ -376,37 +401,39 @@ namespace AgOpenGPS
             {
                 case 0x0084/*NCHITTEST*/ :
                     base.WndProc(ref m);
-
-                    if ((int)m.Result == 0x01/*HTCLIENT*/)
+                    if (!isKioskMode)
                     {
-                        Point screenPoint = new Point(m.LParam.ToInt32());
-                        Point clientPoint = this.PointToClient(screenPoint);
-                        if (clientPoint.Y <= RESIZE_HANDLE_SIZE)
+                        if ((int)m.Result == 0x01/*HTCLIENT*/)
                         {
-                            if (clientPoint.X <= RESIZE_HANDLE_SIZE)
-                                m.Result = (IntPtr)13/*HTTOPLEFT*/ ;
-                            else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
-                                m.Result = (IntPtr)12/*HTTOP*/ ;
+                            Point screenPoint = new Point(m.LParam.ToInt32());
+                            Point clientPoint = this.PointToClient(screenPoint);
+                            if (clientPoint.Y <= RESIZE_HANDLE_SIZE)
+                            {
+                                if (clientPoint.X <= RESIZE_HANDLE_SIZE)
+                                    m.Result = (IntPtr)13/*HTTOPLEFT*/ ;
+                                else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
+                                    m.Result = (IntPtr)12/*HTTOP*/ ;
+                                else
+                                    m.Result = (IntPtr)14/*HTTOPRIGHT*/ ;
+                            }
+                            else if (clientPoint.Y <= (Size.Height - RESIZE_HANDLE_SIZE))
+                            {
+                                if (clientPoint.X <= RESIZE_HANDLE_SIZE)
+                                    m.Result = (IntPtr)10/*HTLEFT*/ ;
+                                else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
+                                    m.Result = (IntPtr)2/*HTCAPTION*/ ;
+                                else
+                                    m.Result = (IntPtr)11/*HTRIGHT*/ ;
+                            }
                             else
-                                m.Result = (IntPtr)14/*HTTOPRIGHT*/ ;
-                        }
-                        else if (clientPoint.Y <= (Size.Height - RESIZE_HANDLE_SIZE))
-                        {
-                            if (clientPoint.X <= RESIZE_HANDLE_SIZE)
-                                m.Result = (IntPtr)10/*HTLEFT*/ ;
-                            else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
-                                m.Result = (IntPtr)2/*HTCAPTION*/ ;
-                            else
-                                m.Result = (IntPtr)11/*HTRIGHT*/ ;
-                        }
-                        else
-                        {
-                            if (clientPoint.X <= RESIZE_HANDLE_SIZE)
-                                m.Result = (IntPtr)16/*HTBOTTOMLEFT*/ ;
-                            else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
-                                m.Result = (IntPtr)15/*HTBOTTOM*/ ;
-                            else
-                                m.Result = (IntPtr)17/*HTBOTTOMRIGHT*/ ;
+                            {
+                                if (clientPoint.X <= RESIZE_HANDLE_SIZE)
+                                    m.Result = (IntPtr)16/*HTBOTTOMLEFT*/ ;
+                                else if (clientPoint.X < (Size.Width - RESIZE_HANDLE_SIZE))
+                                    m.Result = (IntPtr)15/*HTBOTTOM*/ ;
+                                else
+                                    m.Result = (IntPtr)17/*HTBOTTOMRIGHT*/ ;
+                            }
                         }
                     }
                     return;
@@ -490,7 +517,7 @@ namespace AgOpenGPS
 
             if ((char)keyData == (hotkeys[9])) //open the vehicle Settings
             {
-                btnConfig.PerformClick();
+                toolStripConfig.PerformClick();
                 return true;    // indicate that you handled this keystroke
             }
 
@@ -609,7 +636,10 @@ namespace AgOpenGPS
                 sim.headingTrue += Math.PI;
                 ABLine.isABValid = false;
                 curve.isCurveValid = false;
-                if (isBtnAutoSteerOn) btnAutoSteer.PerformClick();
+                if (isBtnAutoSteerOn)
+                {
+                    btnAutoSteer.PerformClick();
+                }
             }
 
             //speed up
@@ -641,7 +671,7 @@ namespace AgOpenGPS
             //turn right
             if (keyData == Keys.Right)
             {
-                sim.steerAngle += 2;
+                sim.steerAngle += 0.5;
                 if (sim.steerAngle > 40) sim.steerAngle = 40;
                 if (sim.steerAngle < -40) sim.steerAngle = -40;
                 sim.steerAngleScrollBar = sim.steerAngle;
@@ -653,7 +683,7 @@ namespace AgOpenGPS
             //turn left
             if (keyData == Keys.Left)
             {
-                sim.steerAngle -= 2;
+                sim.steerAngle -= 0.5;
                 if (sim.steerAngle > 40) sim.steerAngle = 40;
                 if (sim.steerAngle < -40) sim.steerAngle = -40;
                 sim.steerAngleScrollBar = sim.steerAngle;
@@ -880,7 +910,7 @@ namespace AgOpenGPS
         //        //        bool bResult = SetGestureConfig(
         //        //            Handle, // window for which configuration is specified
         //        //            0,      // reserved, must be 0
-        //        //            1,      // count of GESTURECONFIG structures
+        //        //            1,      // countExit of GESTURECONFIG structures
         //        //            ref gc, // array of GESTURECONFIG structures, dwIDs
         //        //                    // will be processed in the order specified
         //        //                    // and repeated occurances will overwrite

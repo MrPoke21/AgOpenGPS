@@ -1,5 +1,6 @@
 ﻿//Please, if you use this, share the improvements
 
+using AgOpenGPS.Culture;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -89,6 +90,8 @@ namespace AgOpenGPS
             nudOffset.Controls[0].Enabled = false;
 
             nudTrailingToolToPivotLength.Controls[0].Enabled = false;
+
+            nudFixJumpDistance.Controls[0].Enabled = false;
         }
 
         private void FormConfig_Load(object sender, EventArgs e)
@@ -112,6 +115,12 @@ namespace AgOpenGPS
             label29.Text = gStr.gsSaveAs;
             UpdateSummary();
             //label3.Text = gStr.gsCurrent;
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormConfig_FormClosing(object sender, FormClosingEventArgs e)
@@ -251,9 +260,9 @@ namespace AgOpenGPS
             chkDisplayExtraGuides.Checked = mf.isSideGuideLines;
             chkDisplayLogNMEA.Checked = mf.isLogNMEA;
             chkDisplayPolygons.Checked = mf.isDrawPolygons;
-            chkDisplayLightbar.Checked = mf.isLightbarOn;
             chkDisplayKeyboard.Checked = mf.isKeyboardOn;
             chkDisplayLogElevation.Checked = mf.isLogElevation;
+            chkDirectionMarkers.Checked = Properties.Settings.Default.setTool_isDirectionMarkers;
 
             if (mf.isMetric) rbtnDisplayMetric.Checked = true;
             else rbtnDisplayImperial.Checked = true;

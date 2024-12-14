@@ -1,5 +1,7 @@
-﻿using AgOpenGPS.Properties;
+﻿using AgOpenGPS.Culture;
+using AgOpenGPS.Properties;
 using System;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -46,6 +48,12 @@ namespace AgOpenGPS
 
         private void FormSteer_Load(object sender, EventArgs e)
         {
+            mf.vehicle.goalPointLookAheadHold = Properties.Settings.Default.setVehicle_goalPointLookAheadHold;
+
+            chkDisplayLightbar.Checked = mf.isLightbarOn;
+            if (chkDisplayLightbar.Checked) { chkDisplayLightbar.Image = Resources.SwitchOn; }
+            else { chkDisplayLightbar.Image = Resources.SwitchOff; }
+
             if (mf.isStanleyUsed) tabControl1.TabPages.Remove(tabInt);
             else tabControl1.TabPages.Remove(tabStan);
 
@@ -116,10 +124,6 @@ namespace AgOpenGPS
             mf.gyd.sideHillCompFactor = Properties.Settings.Default.setAS_sideHillComp;
             hsbarSideHillComp.Value = (int)(Properties.Settings.Default.setAS_sideHillComp * 100);
 
-            mf.vehicle.goalPointLookAhead = Properties.Settings.Default.setVehicle_goalPointLookAhead;
-            hsbarLookAhead.Value = (Int16)(mf.vehicle.goalPointLookAhead * 10);
-            lblLookAhead.Text = mf.vehicle.goalPointLookAhead.ToString();
-
             mf.vehicle.goalPointLookAheadHold = Properties.Settings.Default.setVehicle_goalPointLookAheadHold;
             hsbarHoldLookAhead.Value = (Int16)(mf.vehicle.goalPointLookAheadHold * 10);
             lblHoldLookAhead.Text = mf.vehicle.goalPointLookAheadHold.ToString();
@@ -138,6 +142,9 @@ namespace AgOpenGPS
             mf.vehicle.driveFreeSteerAngle = 0;
 
             nudPanicStopSpeed.Value = (decimal)mf.vehicle.panicStopSpeed;
+
+            nudDeadZoneDistance.Value = (decimal)((double)(Properties.Settings.Default.setAS_deadZoneDistance)/10);
+            nudDeadZoneHeading.Value = (decimal)((double)(Properties.Settings.Default.setAS_deadZoneHeading)/100);
 
             //Stanley guidance
 
@@ -244,6 +251,15 @@ namespace AgOpenGPS
                 hsbarSensor.Visible = false;
                 lblhsbarSensor.Visible = false;
             }
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
+
+            if (mf.isLightBarNotSteerBar) rbtnLightBar.Checked = true;
+            else rbtnSteerBar.Checked = true;
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
@@ -341,7 +357,6 @@ namespace AgOpenGPS
         {
             mf.vehicle.isInFreeDriveMode = false;
 
-            Properties.Settings.Default.setVehicle_goalPointLookAhead = mf.vehicle.goalPointLookAhead;
             Properties.Settings.Default.setVehicle_goalPointLookAheadHold = mf.vehicle.goalPointLookAheadHold;
             Properties.Settings.Default.setVehicle_goalPointLookAheadMult = mf.vehicle.goalPointLookAheadMult;
 
@@ -364,6 +379,8 @@ namespace AgOpenGPS
             Properties.Settings.Default.setAS_minSteerPWM = mf.p_252.pgn[mf.p_252.minPWM] = unchecked((byte)hsbarMinPWM.Value);
 
             Properties.Settings.Default.setVehicle_panicStopSpeed = mf.vehicle.panicStopSpeed;
+            Properties.Settings.Default.setAS_deadZoneDistance = mf.vehicle.deadZoneDistance;
+            Properties.Settings.Default.setAS_deadZoneHeading = mf.vehicle.deadZoneHeading;
 
             Properties.Settings.Default.setAS_ModeXTE = mf.vehicle.modeXTE;
             Properties.Settings.Default.setAS_ModeTime = mf.vehicle.modeTime;
@@ -376,6 +393,25 @@ namespace AgOpenGPS
 
             //save current vehicle
             SettingsIO.ExportAll(mf.vehiclesDirectory + mf.vehicleFileName + ".XML");
+        }
+
+        private void tabSettings_Enter(object sender, EventArgs e)
+        {
+            cboxSteerInReverse.Checked = Properties.Settings.Default.setAS_isSteerInReverse;
+
+        }
+
+        private void tabSettings_Leave(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.setAS_isSteerInReverse = cboxSteerInReverse.Checked;
+            Properties.Settings.Default.Save();
+        }
+
+        private void cboxSteerInReverse_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.setAS_isSteerInReverse = cboxSteerInReverse.Checked;
+            mf.isSteerInReverse = cboxSteerInReverse.Checked;
+
         }
 
 
@@ -408,61 +444,23 @@ namespace AgOpenGPS
 
             nudLineWidth.Value = Properties.Settings.Default.setDisplay_lineWidth;
 
-            //cboxAutoSteerAuto.Checked = Properties.Settings.Default.setAS_isAutoSteerAutoOn;
-            //if (Properties.Settings.Default.setAS_isAutoSteerAutoOn)
-            //{
-            //    cboxAutoSteerAuto.Image = Properties.Resources.AutoSteerOn;
-            //    cboxAutoSteerAuto.Text = "Remote";
-            //}
-            //else
-            //{
-            //    cboxAutoSteerAuto.Image = Properties.Resources.AutoSteerOff;
-            //    cboxAutoSteerAuto.Text = gStr.gsManual;
-            //}
-
-            //cboxConstantContour.Checked = Properties.Settings.Default.setAS_isConstantContourOn;
-            cboxSteerInReverse.Checked = Properties.Settings.Default.setAS_isSteerInReverse;
+            nudcmPerPixel.Value = Properties.Settings.Default.setDisplay_lightbarCmPerPixel;
 
             label20.Text = mf.unitsInCm;
         }
 
         private void tabAlarm_Leave(object sender, EventArgs e)
         {
-            //Properties.Settings.Default.setAS_isAutoSteerAutoOn = cboxAutoSteerAuto.Checked;
-            Properties.Settings.Default.setAS_isSteerInReverse = cboxSteerInReverse.Checked;
             Properties.Settings.Default.Save();
         }
-
-
-        //no longer used
-        private void cboxAutoSteerAuto_Click(object sender, EventArgs e)
+        private void nudcmPerPixel_Click(object sender, EventArgs e)
         {
-            //if (cboxAutoSteerAuto.Checked)
-            //{
-            //    cboxAutoSteerAuto.Image = Properties.Resources.AutoSteerOn;
-            //    cboxAutoSteerAuto.Text = "Remote";
-            //    mf.ahrs.isAutoSteerAuto = true;
-            //}
-            //else
-            //{
-            //    cboxAutoSteerAuto.Image = Properties.Resources.AutoSteerOff;
-            //    cboxAutoSteerAuto.Text = gStr.gsManual;
-            //    mf.ahrs.isAutoSteerAuto = false;
-            //}
+            if (mf.KeypadToNUD((NudlessNumericUpDown)sender, this))
+            {
+                Properties.Settings.Default.setDisplay_lightbarCmPerPixel = ((int)nudcmPerPixel.Value);
+                mf.lightbarCmPerPixel = Properties.Settings.Default.setDisplay_lightbarCmPerPixel;
+            }
         }
-
-        private void cboxSteerInReverse_Click(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.setAS_isSteerInReverse = cboxSteerInReverse.Checked;
-            mf.isSteerInReverse = cboxSteerInReverse.Checked;
-
-        }
-
-        //private void cboxConstantContour_Click(object sender, EventArgs e)
-        //{
-        //    Properties.Settings.Default.setAS_isConstantContourOn = cboxConstantContour.Checked;
-        //    mf.isConstantContourOn = cboxConstantContour.Checked;
-        //}
 
         private void nudLineWidth_Click(object sender, EventArgs e)
         {
@@ -754,13 +752,6 @@ namespace AgOpenGPS
             mf.gyd.sideHillCompFactor = deg;
         }
 
-        private void hsbarLookAhead_ValueChanged(object sender, EventArgs e)
-        {
-            mf.vehicle.goalPointLookAhead = hsbarLookAhead.Value * 0.1;
-            lblLookAhead.Text = mf.vehicle.goalPointLookAhead.ToString();
-            //mf.AutoSteerSettingsOutToPort();
-        }
-
         private void hsbarHoldLookAhead_ValueChanged(object sender, EventArgs e)
         {
             mf.vehicle.goalPointLookAheadHold = hsbarHoldLookAhead.Value * 0.1;
@@ -800,6 +791,18 @@ namespace AgOpenGPS
         {
             mf.KeypadToNUD((NudlessNumericUpDown)sender, this);
             mf.vehicle.panicStopSpeed = (double)nudPanicStopSpeed.Value;
+        }
+
+        private void nudDeadZoneDistance_Click(object sender, EventArgs e)
+        {
+            mf.KeypadToNUD((NudlessNumericUpDown)sender, this);
+            mf.vehicle.deadZoneDistance = (int)(nudDeadZoneDistance.Value*10);
+        }
+
+        private void nudDeadZoneHeading_Click(object sender, EventArgs e)
+        {
+            mf.KeypadToNUD((NudlessNumericUpDown)sender, this);
+            mf.vehicle.deadZoneHeading = (int)(nudDeadZoneHeading.Value*100);
         }
 
         private void EnableAlert_Click(object sender, EventArgs e)
@@ -992,6 +995,30 @@ namespace AgOpenGPS
             pboxSendSteer.Visible = true;
             lblhsbarSensor.Text = ((int)((double)hsbarSensor.Value * 0.3921568627)).ToString() + "%";
         }
+
+        private void rbtnLightBar_Click(object sender, EventArgs e)
+        {
+            mf.isLightBarNotSteerBar = true;
+            Properties.Settings.Default.setMenu_isLightbarNotSteerBar = mf.isLightBarNotSteerBar;
+            Properties.Settings.Default.Save();
+        }
+
+        private void rbtnSteerBar_Click(object sender, EventArgs e)
+        {
+            mf.isLightBarNotSteerBar = false;
+            Properties.Settings.Default.setMenu_isLightbarNotSteerBar = mf.isLightBarNotSteerBar;
+            Properties.Settings.Default.Save();
+        }
+        private void chkDisplayLightbar_Click(object sender, EventArgs e)
+        {
+            if (chkDisplayLightbar.Checked) { chkDisplayLightbar.Image = Resources.SwitchOn; }
+            else { chkDisplayLightbar.Image = Resources.SwitchOff; }
+
+            Properties.Settings.Default.setMenu_isLightbarOn = chkDisplayLightbar.Checked;
+            Properties.Settings.Default.Save();
+            mf.isLightbarOn = chkDisplayLightbar.Checked;
+        }
+
 
         #endregion
 

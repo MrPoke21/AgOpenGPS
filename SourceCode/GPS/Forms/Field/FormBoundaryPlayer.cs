@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -42,6 +43,12 @@ namespace AgOpenGPS
             mf.bnd.createBndOffset = (mf.tool.width * 0.5);
             mf.bnd.isBndBeingMade = true;
             mf.Focus();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormBoundaryPlayer_FormClosing(object sender, FormClosingEventArgs e)
@@ -97,7 +104,7 @@ namespace AgOpenGPS
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            DialogResult result3 = MessageBox.Show("Done?", gStr.gsBoundaryMenu,
+            DialogResult result3 = MessageBox.Show("Done?", gStr.gsBoundary,
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question,
                 MessageBoxDefaultButton.Button2);

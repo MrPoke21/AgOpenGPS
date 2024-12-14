@@ -39,6 +39,12 @@ namespace AgOpenGPS
             Location = Properties.Settings.Default.setWindow_formNudgeLocation;
             Size = Properties.Settings.Default.setWindow_formNudgeSize;
             UpdateMoveLabel();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
         private void FormEditTrack_MouseEnter(object sender, EventArgs e)
         {
@@ -83,7 +89,10 @@ namespace AgOpenGPS
             mf.ABLine.isABValid = false;
             mf.curve.isCurveValid = false;
 
-            if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+            if (mf.isBtnAutoSteerOn)
+            {
+                mf.btnAutoSteer.PerformClick();
+            }
 
             if (mf.trk.gArr.Count > 0)
             {
@@ -129,7 +138,10 @@ namespace AgOpenGPS
             mf.ABLine.isABValid = false;
             mf.curve.isCurveValid = false;
 
-            if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+            if (mf.isBtnAutoSteerOn)
+            {
+                mf.btnAutoSteer.PerformClick();
+            }
 
             if (mf.trk.gArr.Count > 0)
             {

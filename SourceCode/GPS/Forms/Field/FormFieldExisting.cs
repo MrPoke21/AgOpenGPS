@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -226,6 +227,13 @@ namespace AgOpenGPS
                 Close();
                 return;
             }
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
+
         }
 
         private void tboxFieldName_TextChanged(object sender, EventArgs e)

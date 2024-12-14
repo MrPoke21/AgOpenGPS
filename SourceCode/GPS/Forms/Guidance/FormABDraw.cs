@@ -1,4 +1,5 @@
-﻿using OpenTK;
+﻿using AgOpenGPS.Culture;
+using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -91,6 +92,12 @@ namespace AgOpenGPS
             this.Top = (area.Height - this.Height) / 2;
             this.Left = (area.Width - this.Width) / 2;
             FormABDraw_ResizeEnd(this, e);
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormABDraw_FormClosing(object sender, FormClosingEventArgs e)
@@ -102,7 +109,10 @@ namespace AgOpenGPS
                     mf.trk.idx = -1;
                     mf.trk.gArr.Clear();
                     mf.FileSaveTracks();
-                    if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+                    if (mf.isBtnAutoSteerOn)
+                    {
+                       mf. btnAutoSteer.PerformClick();
+                    }
                     if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
                 }
                 else
@@ -155,7 +165,10 @@ namespace AgOpenGPS
 
                             if (mf.trk.idx != originalLine)
                             {
-                                if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+                                if (mf.isBtnAutoSteerOn)
+                                {
+                                    mf.btnAutoSteer.PerformClick();
+                                }
                                 if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
                             }
                         }
@@ -364,7 +377,7 @@ namespace AgOpenGPS
         }
 
         private void btnMakeBoundaryCurve_Click(object sender, EventArgs e)
-        {            //count the points from the boundary
+        {            //countExit the points from the boundary
             for (int q = 0; q < mf.bnd.bndList.Count; q++)
             {
                 vec3 pt3;
@@ -404,7 +417,7 @@ namespace AgOpenGPS
                     if (q > 0) gTemp[indx].name = "Inner Boundary Curve " + q.ToString();
 
                     gTemp[indx].heading = 0;
-                    gTemp[indx].mode = (int)TrackMode.bndCurve;
+                    gTemp[indx].mode = TrackMode.bndCurve;
 
                     //write out the Curve Points
                     foreach (vec3 item in mf.curve.desList)
@@ -512,7 +525,7 @@ namespace AgOpenGPS
                     (Math.Round(glm.toDegrees(gTemp[indx].heading), 1)).ToString(CultureInfo.InvariantCulture)
                     + "\u00B0" ;
 
-                gTemp[indx].mode = (int)TrackMode.Curve;
+                gTemp[indx].mode = TrackMode.Curve;
 
                 //write out the Curve Points
                 foreach (vec3 item in mf.curve.desList)
@@ -563,7 +576,7 @@ namespace AgOpenGPS
             indx = gTemp.Count - 1;
 
             gTemp[indx].heading = abHead;
-            gTemp[indx].mode = (int)TrackMode.AB;
+            gTemp[indx].mode = TrackMode.AB;
 
             //calculate the new points for the reference line and points
             gTemp[indx].ptA.easting = mf.bnd.bndList[bndSelect].fenceLine[start].easting;
@@ -738,7 +751,7 @@ namespace AgOpenGPS
             for (int i = 0; i < gTemp.Count; i++)
             {
                 //AB Lines
-                if (gTemp[i].mode == (int)TrackMode.AB)
+                if (gTemp[i].mode == TrackMode.AB)
                 {
                     GL.Enable(EnableCap.LineStipple);
                     GL.LineWidth(4);
@@ -777,12 +790,12 @@ namespace AgOpenGPS
 
                 }
 
-                else if (gTemp[i].mode == (int)TrackMode.Curve || gTemp[i].mode == (int)TrackMode.bndCurve)
+                else if (gTemp[i].mode == TrackMode.Curve || gTemp[i].mode == TrackMode.bndCurve)
                 {
                     GL.Enable(EnableCap.LineStipple);
                     GL.LineWidth(5);
 
-                    if (gTemp[i].mode == (int)TrackMode.bndCurve) GL.LineStipple(1, 0x0007);
+                    if (gTemp[i].mode == TrackMode.bndCurve) GL.LineStipple(1, 0x0007);
                     else GL.LineStipple(1, 0x0707);
 
 
@@ -793,7 +806,7 @@ namespace AgOpenGPS
                     }
 
                     GL.Color3(0.30f, 0.97f, 0.30f);
-                    if (gTemp[i].mode == (int)TrackMode.bndCurve) GL.Color3(0.70f, 0.5f, 0.2f);
+                    if (gTemp[i].mode == TrackMode.bndCurve) GL.Color3(0.70f, 0.5f, 0.2f);
                     GL.Begin(PrimitiveType.LineStrip);
                     foreach (vec3 pts in gTemp[i].curvePts)
                     {
@@ -852,14 +865,14 @@ namespace AgOpenGPS
             btnMakeBoundaryCurve.Enabled = true; 
             for (int i = 0; i < gTemp.Count; i++)
             {
-                if (gTemp[i].mode == (int)TrackMode.bndCurve)
+                if (gTemp[i].mode == TrackMode.bndCurve)
                 {
                     btnMakeBoundaryCurve.Enabled = false;
                     break;
                 }
             }
 
-            if (indx > -1 && gTemp[indx].mode != (int)TrackMode.Curve)
+            if (indx > -1 && gTemp[indx].mode != TrackMode.Curve)
             {
                 btnALength.Enabled = false;
                 btnBLength.Enabled = false;
@@ -873,7 +886,7 @@ namespace AgOpenGPS
 
         private void btnALength_Click(object sender, EventArgs e)
         {
-            if (indx > -1 && gTemp[indx].mode == (int)TrackMode.Curve)
+            if (indx > -1 && gTemp[indx].mode == TrackMode.Curve)
             {
                 //and the beginning
                 vec3 start = new vec3(gTemp[indx].curvePts[0]);
@@ -890,7 +903,7 @@ namespace AgOpenGPS
 
         private void btnBLength_Click(object sender, EventArgs e)
         {
-            if (indx > -1 && gTemp[indx].mode == (int)TrackMode.Curve)
+            if (indx > -1 && gTemp[indx].mode == TrackMode.Curve)
             {
                 int ptCnt = gTemp[indx].curvePts.Count - 1;
 

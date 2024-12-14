@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -35,6 +36,12 @@ namespace AgOpenGPS
             mf.curve.isSmoothWindowOpen = true;
             smoothCount = 20;
             lblSmooth.Text = "**";
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void btnCancel_Click(object sender, EventArgs e)

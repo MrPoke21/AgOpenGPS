@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -67,6 +68,12 @@ namespace AgOpenGPS
             Size = Properties.Settings.Default.setJobMenu_size;
 
             mf.CloseTopMosts();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void btnJobNew_Click(object sender, EventArgs e)

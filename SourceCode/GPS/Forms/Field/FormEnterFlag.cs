@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Globalization;
 using System.Windows.Forms;
 
@@ -25,6 +26,12 @@ namespace AgOpenGPS
 
         private void FormEnterAB_Load(object sender, EventArgs e)
         {
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
+
         }
 
         private void nudLatitude_Click(object sender, EventArgs e)

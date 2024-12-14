@@ -17,6 +17,10 @@ namespace AgOpenGPS
 
         private void UpdateLabels()
         {
+            if (mf.flagNumberPicked > mf.flagPts.Count)
+            {
+                mf.flagNumberPicked = mf.flagPts.Count-1;
+            }
             lblLatStart.Text = mf.flagPts[mf.flagNumberPicked - 1].latitude.ToString();
             lblLonStart.Text = mf.flagPts[mf.flagNumberPicked - 1].longitude.ToString();
             lblEasting.Text = mf.flagPts[mf.flagNumberPicked - 1].easting.ToString("N2");
@@ -29,6 +33,12 @@ namespace AgOpenGPS
         private void FormFlags_Load(object sender, EventArgs e)
         {
             UpdateLabels();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void btnNorth_MouseDown(object sender, MouseEventArgs e)

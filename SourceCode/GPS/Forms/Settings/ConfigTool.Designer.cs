@@ -1,4 +1,5 @@
-﻿using AgOpenGPS.Properties;
+﻿using AgOpenGPS.Culture;
+using AgOpenGPS.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
@@ -539,6 +540,8 @@ namespace AgOpenGPS
 
                 //enable disable manual buttons
                 mf.LineUpIndividualSectionBtns();
+
+                nudDefaultSectionWidth.DecimalPlaces = 0;
             }
             else
             {
@@ -546,6 +549,8 @@ namespace AgOpenGPS
                 mf.AllZonesAndButtonsToState(btnStates.Off);
 
                 mf.LineUpAllZoneButtons();
+
+                nudDefaultSectionWidth.DecimalPlaces = 1;
             }
 
             cboxIsUnique.Checked = !mf.tool.isSectionsNotZones;
@@ -638,7 +643,7 @@ namespace AgOpenGPS
                 nudNumberOfSections.Value = numberOfSections;
 
                 defaultSectionWidth = Properties.Settings.Default.setTool_sectionWidthMulti;
-                nudDefaultSectionWidth.Value = (int)(defaultSectionWidth * mf.m2InchOrCm);
+                nudDefaultSectionWidth.Value = (decimal)(Math.Round((defaultSectionWidth * mf.m2InchOrCm),1));
 
                 SetNudZoneMinMax();
 
@@ -1144,7 +1149,7 @@ namespace AgOpenGPS
 
                 if (mf.isMetric)
                 {
-                    if (numberOfSections * wide > 4800)
+                    if (numberOfSections * wide > 5000)
                     {
                         wide = 99;
                         mf.TimedMessageBox(3000, "Too Wide", "Max 50 Meters");
@@ -1236,6 +1241,56 @@ namespace AgOpenGPS
                             item2.Enabled = true;
                             item2.Visible = true;
                             toolWidth += item2.Value;
+
+                            if (mf.isMetric)
+                            {
+                                if (toolWidth > 5000)
+                                {
+                                    mf.TimedMessageBox(3000, "Too Wide", "Set to 99, Max 50 Meters");
+                                    toolWidth = 0;
+                                    nudSection01.Value =  99;
+                                    nudSection02.Value =  99;
+                                    nudSection03.Value =  99;
+                                    nudSection04.Value =  99;
+                                    nudSection05.Value =  99;
+                                    nudSection06.Value =  99;
+                                    nudSection07.Value =  99;
+                                    nudSection08.Value =  99;
+                                    nudSection09.Value =  99;
+                                    nudSection10.Value =  99;
+                                    nudSection11.Value =  99;
+                                    nudSection12.Value =  99;
+                                    nudSection13.Value =  99;
+                                    nudSection14.Value =  99;
+                                    nudSection15.Value =  99;
+                                    nudSection16.Value =  99;
+                                }
+                            }
+                            else
+                            {
+                                if (toolWidth > 1900)
+                                {
+                                    mf.TimedMessageBox(3000, "Too Wide", "Set to 99, Max 164 Feet");
+                                    toolWidth = 0;
+                                    nudSection01.Value = 99;
+                                    nudSection02.Value = 99;
+                                    nudSection03.Value = 99;
+                                    nudSection04.Value = 99;
+                                    nudSection05.Value = 99;
+                                    nudSection06.Value = 99;
+                                    nudSection07.Value = 99;
+                                    nudSection08.Value = 99;
+                                    nudSection09.Value = 99;
+                                    nudSection10.Value = 99;
+                                    nudSection11.Value = 99;
+                                    nudSection12.Value = 99;
+                                    nudSection13.Value = 99;
+                                    nudSection14.Value = 99;
+                                    nudSection15.Value = 99;
+                                    nudSection16.Value = 99;
+                                }
+                            }
+
                         }
                         else
                         {

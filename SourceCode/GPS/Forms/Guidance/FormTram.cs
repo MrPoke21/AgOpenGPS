@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Culture;
+using System;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -84,6 +85,12 @@ namespace AgOpenGPS
             {
                 MoveBuildTramLine(0);
             }
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void FormTram_FormClosing(object sender, FormClosingEventArgs e)
@@ -154,7 +161,7 @@ namespace AgOpenGPS
 
         private void btnSwapAB_Click(object sender, EventArgs e)
         {
-            if (mf.trk.gArr[mf.trk.idx].mode == (int)TrackMode.AB)
+            if (mf.trk.gArr[mf.trk.idx].mode == TrackMode.AB)
             {
                 vec2 bob = mf.trk.gArr[mf.trk.idx].ptA;
                 mf.trk.gArr[mf.trk.idx].ptA = mf.trk.gArr[mf.trk.idx].ptB;

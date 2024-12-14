@@ -1,3 +1,4 @@
+using AgOpenGPS.Culture;
 using System;
 using System.Drawing;
 using System.Globalization;
@@ -46,6 +47,12 @@ namespace AgOpenGPS
             panelChoose.Visible = false;
             panelKML.Visible = false;
             mf.CloseTopMosts();
+
+            if (!mf.IsOnScreen(Location, Size, 1))
+            {
+                Top = 0;
+                Left = 0;
+            }
         }
 
         private void UpdateChart()
