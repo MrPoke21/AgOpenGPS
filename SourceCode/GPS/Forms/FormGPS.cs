@@ -121,8 +121,6 @@ namespace AgOpenGPS
         //isGPSData form up
         public bool isGPSSentencesOn = false, isKeepOffsetsOn = false;
 
-        public long networkPing = 0;
-
         /// <summary>
         /// create the scene camera
         /// </summary>
