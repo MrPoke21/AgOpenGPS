@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows.Forms;
+using AgLibrary.Logging;
 
 namespace AgIO
 {
@@ -184,8 +185,7 @@ namespace AgIO
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.Write("Bind Error = ");
-                                        Console.WriteLine(ex.ToString());
+                                        Log.EventWriter("Catch - > Socket Bind Error Scan UDP" + ex.ToString());
                                     }
 
                                     scanSocket.Dispose();
@@ -193,8 +193,7 @@ namespace AgIO
                             }
                             catch (Exception ex)
                             {
-                                Console.Write("nic Loop = ");
-                                Console.WriteLine(ex.ToString());
+                                Log.EventWriter("Catch - > Nic Loop exception in Scan" + ex.ToString());
                             }
                         }
                     }
@@ -257,8 +256,7 @@ namespace AgIO
                                         }
                                         catch (Exception ex)
                                         {
-                                            Console.Write("Bind Error = ");
-                                            Console.WriteLine(ex.ToString());
+                                            Log.EventWriter("Catch - > Send Subnet Bind and Send: " + ex.ToString());
                                         }
 
                                         scanSocket.Dispose();
@@ -266,8 +264,7 @@ namespace AgIO
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.Write("nic Loop = ");
-                                    Console.WriteLine(ex.ToString());
+                                    Log.EventWriter("Catch - > Nic Loop Send Subnet: " + ex.ToString());
                                 }
                             }
                         }
@@ -293,6 +290,8 @@ namespace AgIO
 
             pboxSendSteer.Visible = false;
             btnSerialCancel.Image = Properties.Resources.back_button;
+
+            Log.EventWriter("Subnet Uploaded: " + lblNetworkHelp.Text);
         }
 
         private void nudFirstIP_Click(object sender, EventArgs e)
@@ -340,18 +339,19 @@ namespace AgIO
 
         private void btnUDPOff_Click(object sender, EventArgs e)
         {
-
             Properties.Settings.Default.setUDP_isOn = false;
             Properties.Settings.Default.setUDP_isSendNMEAToUDP = false;
 
             Properties.Settings.Default.Save();
 
             mf.YesMessageBox("AgIO will Restart to Disable UDP Networking Features");
+            Log.EventWriter("Program Reset: Turning UDP OFF");
 
+            RegistrySettings.Save();
             Application.Restart();
             Environment.Exit(0);
-            Close();
 
+            Close();
         }
 
         private void btnAutoSet_Click(object sender, EventArgs e)

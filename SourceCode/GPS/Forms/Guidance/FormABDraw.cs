@@ -1,4 +1,5 @@
 ﻿using AgOpenGPS.Culture;
+using AgOpenGPS.Helpers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -93,7 +94,7 @@ namespace AgOpenGPS
             this.Left = (area.Width - this.Width) / 2;
             FormABDraw_ResizeEnd(this, e);
 
-            if (!mf.IsOnScreen(Location, Size, 1))
+            if (!ScreenHelper.IsOnScreen(Bounds))
             {
                 Top = 0;
                 Left = 0;
@@ -111,7 +112,8 @@ namespace AgOpenGPS
                     mf.FileSaveTracks();
                     if (mf.isBtnAutoSteerOn)
                     {
-                       mf. btnAutoSteer.PerformClick();
+                        mf. btnAutoSteer.PerformClick();
+                        mf.TimedMessageBox(2000, gStr.gsGuidanceStopped, "Return From Editing");
                     }
                     if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
                 }
@@ -132,6 +134,7 @@ namespace AgOpenGPS
                         if (mf.trk.idx != originalLine)
                         {
                             if (mf.isBtnAutoSteerOn) mf.btnAutoSteer.PerformClick();
+                            mf.TimedMessageBox(2000, gStr.gsGuidanceStopped, "Return From Editing");
                             if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
                         }
 
@@ -168,6 +171,7 @@ namespace AgOpenGPS
                                 if (mf.isBtnAutoSteerOn)
                                 {
                                     mf.btnAutoSteer.PerformClick();
+                                    mf.TimedMessageBox(2000, gStr.gsGuidanceStopped, "Return From Editing");
                                 }
                                 if (mf.yt.isYouTurnBtnOn) mf.btnAutoYouTurn.PerformClick();
                             }
