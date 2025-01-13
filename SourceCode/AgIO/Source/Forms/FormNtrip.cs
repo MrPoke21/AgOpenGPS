@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using AgLibrary.Logging;
 
 namespace AgIO
 {
@@ -104,19 +102,12 @@ namespace AgIO
             {
                 Properties.Settings.Default.setRadio_isOn = mf.isRadio_RequiredOn = false;
                 Properties.Settings.Default.setPass_isOn = mf.isSerialPass_RequiredOn = false;
-                Log.EventWriter("NTRIP Turned on");
-            }
-            else
-            {
-                Log.EventWriter("NTRIP Turned off");
             }
 
             Properties.Settings.Default.Save();
 
             mf.YesMessageBox("Restart of AgIO is Required - Restarting");
-            Log.EventWriter("Program Reset: Selecting NTRIP Feature");
 
-            RegistrySettings.Save();
             Application.Restart();
             Environment.Exit(0);
         }
@@ -160,13 +151,11 @@ namespace AgIO
                 else
                 {
                     mf.YesMessageBox("Can't Find: " + actualIP);
-                    Log.EventWriter("Can't Find Caster IP");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 mf.YesMessageBox("Can't Find: " + actualIP);
-                Log.EventWriter("Catch -> Can't Find Caster IP" + ex.ToString());
             }
         }
 
@@ -263,9 +252,6 @@ namespace AgIO
             }
             else
             {
-                Log.EventWriter("Program Reset: Button Ok on Ntrip Form");
-                
-                RegistrySettings.Save();
                 Application.Restart();
                 Environment.Exit(0);
             }
@@ -337,18 +323,16 @@ namespace AgIO
                     }
                 }
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 mf.TimedMessageBox(2000, "Socket Exception", "Invalid IP:Port");
                 btnGetSourceTable.Enabled = true;
-                Log.EventWriter("Catch -> Socket Exception, Invalid IP:Port" + ex.ToString());
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 mf.TimedMessageBox(2000, "Exception", "Get Source Table Error");
                 btnGetSourceTable.Enabled = true;
-                Log.EventWriter("Catch - > Get Source Table Error" + ex.ToString());
                 return;
             }
 

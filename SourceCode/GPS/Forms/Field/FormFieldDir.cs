@@ -1,6 +1,4 @@
-﻿using AgLibrary.Logging;
-using AgOpenGPS.Culture;
-using AgOpenGPS.Helpers;
+﻿using AgOpenGPS.Culture;
 using System;
 using System.Globalization;
 using System.IO;
@@ -29,7 +27,7 @@ namespace AgOpenGPS
         {
             btnSave.Enabled = false;
 
-            if (!ScreenHelper.IsOnScreen(Bounds))
+            if (!mf.IsOnScreen(Location, Size, 1))
             {
                 Top = 0;
                 Left = 0;
@@ -83,7 +81,7 @@ namespace AgOpenGPS
             mf.currentFieldDirectory = tboxFieldName.Text.Trim();
 
             //get the directory and make sure it exists, create if not
-            DirectoryInfo dirNewField = new DirectoryInfo(Path.Combine(RegistrySettings.fieldsDirectory, mf.currentFieldDirectory));
+            string dirNewField = mf.fieldsDirectory + mf.currentFieldDirectory + "\\";
 
             mf.menustripLanguage.Enabled = false;
             //if no template set just make a new file.
@@ -93,7 +91,9 @@ namespace AgOpenGPS
                 mf.JobNew();
 
                 //create it for first save
-                if (dirNewField.Exists)
+                string directoryName = Path.GetDirectoryName(dirNewField);
+
+                if ((!string.IsNullOrEmpty(directoryName)) && (Directory.Exists(directoryName)))
                 {
                     MessageBox.Show(gStr.gsChooseADifferentName, gStr.gsDirectoryExists, MessageBoxButtons.OK, MessageBoxIcon.Stop);
                     return;
@@ -104,7 +104,9 @@ namespace AgOpenGPS
 
                     mf.pn.SetLocalMetersPerDegree();
 
-                    dirNewField.Create();
+                    //make sure directory exists, or create it
+                    if ((!string.IsNullOrEmpty(directoryName)) && (!Directory.Exists(directoryName)))
+                    { Directory.CreateDirectory(directoryName); }
 
                     mf.displayFieldName = mf.currentFieldDirectory;
 
@@ -123,7 +125,7 @@ namespace AgOpenGPS
             }
             catch (Exception ex)
             {
-                Log.EventWriter("Creating new field " + ex);
+                mf.WriteErrorLog("Creating new field " + ex);
 
                 MessageBox.Show(gStr.gsError, ex.ToString());
                 mf.currentFieldDirectory = "";

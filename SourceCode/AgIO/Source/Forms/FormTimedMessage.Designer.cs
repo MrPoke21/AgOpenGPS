@@ -34,12 +34,12 @@
             this.lblMessage2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // lblTitle
+            // lblMessage
             // 
             this.lblTitle.AutoSize = true;
             this.lblTitle.Font = new System.Drawing.Font("Tahoma", 18F, System.Drawing.FontStyle.Bold);
             this.lblTitle.Location = new System.Drawing.Point(12, 20);
-            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Name = "lblMessage";
             this.lblTitle.Size = new System.Drawing.Size(115, 29);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Message";
@@ -65,7 +65,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 23F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.LightSalmon;
-            this.ClientSize = new System.Drawing.Size(268, 147);
+            this.ClientSize = new System.Drawing.Size(272, 151);
             this.ControlBox = false;
             this.Controls.Add(this.lblMessage2);
             this.Controls.Add(this.lblTitle);
@@ -75,6 +75,7 @@
             this.Name = "FormTimedMessage";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "AgIO Message";
             this.TopMost = true;
             this.ResumeLayout(false);

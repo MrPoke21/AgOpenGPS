@@ -48,11 +48,11 @@ namespace AgIO
             this.lblGPS1Comm = new System.Windows.Forms.Label();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this.toolStripMenuProfiles = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripLogViewer = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.modSimToolStrip = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripUDPMonitor = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSerialMonitor = new System.Windows.Forms.ToolStripMenuItem();
-            this.modSimToolStrip = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripEthernet = new System.Windows.Forms.ToolStripMenuItem();
             this.deviceManagerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsMenuStrip = new System.Windows.Forms.ToolStripDropDownButton();
@@ -278,8 +278,8 @@ namespace AgIO
             this.toolStripDropDownButton1.BackColor = System.Drawing.Color.Transparent;
             this.toolStripDropDownButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuProfiles,
-            this.toolStripLogViewer,
+            this.toolStripMenuItem1,
+            this.toolStripMenuItem2,
             this.toolStripUDPMonitor,
             this.toolStripSerialMonitor,
             this.modSimToolStrip,
@@ -292,23 +292,32 @@ namespace AgIO
             this.toolStripDropDownButton1.ShowDropDownArrow = false;
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(110, 68);
             // 
-            // toolStripMenuProfiles
+            // toolStripMenuItem1
             // 
-            this.toolStripMenuProfiles.Font = new System.Drawing.Font("Tahoma", 21.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.toolStripMenuProfiles.Image = global::AgIO.Properties.Resources.VehFileSave;
-            this.toolStripMenuProfiles.Name = "toolStripMenuProfiles";
-            this.toolStripMenuProfiles.Size = new System.Drawing.Size(348, 70);
-            this.toolStripMenuProfiles.Text = "Profiles";
-            this.toolStripMenuProfiles.Click += new System.EventHandler(this.toolStripMenuProfiles_Click);
+            this.toolStripMenuItem1.Font = new System.Drawing.Font("Tahoma", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.toolStripMenuItem1.Image = global::AgIO.Properties.Resources.VehFileSave;
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(348, 70);
+            this.toolStripMenuItem1.Text = "Save";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
-            // toolStripLogViewer
+            // toolStripMenuItem2
             // 
-            this.toolStripLogViewer.Font = new System.Drawing.Font("Tahoma", 21.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.toolStripLogViewer.Image = global::AgIO.Properties.Resources.LogViewer;
-            this.toolStripLogViewer.Name = "toolStripLogViewer";
-            this.toolStripLogViewer.Size = new System.Drawing.Size(348, 70);
-            this.toolStripLogViewer.Text = "Log Viewer";
-            this.toolStripLogViewer.Click += new System.EventHandler(this.toolStripLogViewer_Click);
+            this.toolStripMenuItem2.Font = new System.Drawing.Font("Tahoma", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.toolStripMenuItem2.Image = global::AgIO.Properties.Resources.VehFileLoad;
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(348, 70);
+            this.toolStripMenuItem2.Text = "Load";
+            this.toolStripMenuItem2.Click += new System.EventHandler(this.toolStripMenuItem2_Click);
+            // 
+            // modSimToolStrip
+            // 
+            this.modSimToolStrip.Font = new System.Drawing.Font("Tahoma", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.modSimToolStrip.Image = global::AgIO.Properties.Resources.ModuleSim2;
+            this.modSimToolStrip.Name = "modSimToolStrip";
+            this.modSimToolStrip.Size = new System.Drawing.Size(348, 70);
+            this.modSimToolStrip.Text = "Module Sim";
+            this.modSimToolStrip.Click += new System.EventHandler(this.modSimToolStrip_Click);
             // 
             // toolStripUDPMonitor
             // 
@@ -327,15 +336,6 @@ namespace AgIO
             this.toolStripSerialMonitor.Size = new System.Drawing.Size(348, 70);
             this.toolStripSerialMonitor.Text = "Serial Monitor";
             this.toolStripSerialMonitor.Click += new System.EventHandler(this.toolStripSerialMonitor_Click);
-            // 
-            // modSimToolStrip
-            // 
-            this.modSimToolStrip.Font = new System.Drawing.Font("Tahoma", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.modSimToolStrip.Image = global::AgIO.Properties.Resources.ModuleSim2;
-            this.modSimToolStrip.Name = "modSimToolStrip";
-            this.modSimToolStrip.Size = new System.Drawing.Size(348, 70);
-            this.modSimToolStrip.Text = "Module Sim";
-            this.modSimToolStrip.Click += new System.EventHandler(this.modSimToolStrip_Click);
             // 
             // toolStripEthernet
             // 
@@ -1240,7 +1240,6 @@ namespace AgIO
         private CheckBox cboxAutoRunGPS_Out;
         private Button btnMinimizeMainForm;
         private ToolStripMenuItem modSimToolStrip;
-        private ToolStripMenuItem toolStripLogViewer;
     }
 }
 

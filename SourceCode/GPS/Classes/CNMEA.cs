@@ -32,6 +32,8 @@ namespace AgOpenGPS
         public int fixQuality, ageAlarm;
         public int satellitesTracked;
 
+        public StringBuilder logNMEASentence = new StringBuilder();
+
         private readonly FormGPS mf;
 
         public CNMEA(FormGPS f)

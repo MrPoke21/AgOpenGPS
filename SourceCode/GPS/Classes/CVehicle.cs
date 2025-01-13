@@ -15,16 +15,16 @@ namespace AgOpenGPS
         public double antennaHeight;
         public double antennaPivot;
         public double wheelbase;
-        public double antennaOffset;
-        public int deadZoneHeading, deadZoneDelay;
-        public int vehicleType, deadZoneDelayCounter;
+        public double antennaOffset, panicStopSpeed;
+        public int deadZoneDistance, deadZoneHeading;
+        public int vehicleType;
         public bool isInDeadZone;
 
         //min vehicle speed allowed before turning shit off
         public double slowSpeedCutoff = 0;
 
         //autosteer values
-        public double goalPointLookAheadHold, goalPointLookAheadMult, goalPointAcquireFactor, uturnCompensation;
+        public double goalPointLookAheadHold, goalPointLookAheadMult, uturnCompensation;
 
         public double stanleyDistanceErrorGain, stanleyHeadingErrorGain;
         public double minLookAheadDistance = 2.0;
@@ -64,8 +64,8 @@ namespace AgOpenGPS
             slowSpeedCutoff = Properties.Settings.Default.setVehicle_slowSpeedCutoff;
 
             goalPointLookAheadHold = Properties.Settings.Default.setVehicle_goalPointLookAheadHold;
+
             goalPointLookAheadMult = Properties.Settings.Default.setVehicle_goalPointLookAheadMult;
-            goalPointAcquireFactor = Properties.Settings.Default.setVehicle_goalPointAcquireFactor;
 
             stanleyDistanceErrorGain = Properties.Settings.Default.stanleyDistanceErrorGain;
             stanleyHeadingErrorGain = Properties.Settings.Default.stanleyHeadingErrorGain;
@@ -84,9 +84,9 @@ namespace AgOpenGPS
             vehicleType = Properties.Settings.Default.setVehicle_vehicleType;
 
             hydLiftLookAheadTime = Properties.Settings.Default.setVehicle_hydraulicLiftLookAhead;
-
+            panicStopSpeed = Properties.Settings.Default.setVehicle_panicStopSpeed;
+            deadZoneDistance = Properties.Settings.Default.setAS_deadZoneDistance;
             deadZoneHeading = Properties.Settings.Default.setAS_deadZoneHeading;
-            deadZoneDelay = Properties.Settings.Default.setAS_deadZoneDelay;
 
             isInFreeDriveMode = false;
 
@@ -109,38 +109,29 @@ namespace AgOpenGPS
         public double UpdateGoalPointDistance()
         {
             double xTE = Math.Abs(modeActualXTE);
-            double goalPointDistance = mf.avgSpeed * 0.05 * goalPointLookAheadMult;
+            double goalPointDistance = mf.avgSpeed * 0.07; //0.05 * 1.4
 
-            double LoekiAheadHold = goalPointLookAheadHold;
-            double LoekiAheadAcquire = goalPointLookAheadHold * goalPointAcquireFactor;
-
-            if (!mf.isBtnAutoSteerOn)
-            {
-                LoekiAheadHold = 5;
-                LoekiAheadAcquire = LoekiAheadHold * goalPointAcquireFactor;
-            }
+            double LoekiAhead = goalPointLookAheadHold;
+            if (!mf.isBtnAutoSteerOn) LoekiAhead = 5;
 
             if (xTE <= 0.1)
             {
-                goalPointDistance *= LoekiAheadHold; 
-                goalPointDistance += LoekiAheadHold;
+                goalPointDistance *= LoekiAhead; 
+                goalPointDistance += LoekiAhead;
             }
 
             else if (xTE > 0.1 && xTE < 0.4)
             {
                 xTE -= 0.1;
-
-                LoekiAheadHold = (1 - (xTE / 0.3)) * (LoekiAheadHold - LoekiAheadAcquire);
-                LoekiAheadHold += LoekiAheadAcquire;
-
-                goalPointDistance *= LoekiAheadHold; 
-                goalPointDistance += LoekiAheadHold;
+                double ramp = 1- (xTE/1.2);
+                goalPointDistance *= LoekiAhead * ramp; 
+                goalPointDistance += LoekiAhead * ramp;
 
             }
             else
             {
-                goalPointDistance *= LoekiAheadAcquire; 
-                goalPointDistance += LoekiAheadAcquire;
+                goalPointDistance *= LoekiAhead * 0.75; 
+                goalPointDistance += LoekiAhead * 0.75;
             }
 
             ////how far should goal point be away  - speed * seconds * kmph -> m/s then limit min value
@@ -483,7 +474,7 @@ namespace AgOpenGPS
             //    GL.End();
             //}
 
-            if (mf.bnd.isBndBeingMade && mf.bnd.isDrawAtPivot)
+            if (mf.bnd.isBndBeingMade)
             {
                 if (mf.bnd.isDrawRightSide)
                 {
@@ -522,7 +513,7 @@ namespace AgOpenGPS
                 double svennDist = mf.camera.camSetDistance * -0.07;
                 double svennWidth = svennDist * 0.22;
                 GL.LineWidth(mf.ABLine.lineWidth);
-                GL.Color3(0.95, 0.95, 0.10);
+                GL.Color3(1.2, 1.25, 0.10);
                 GL.Begin(PrimitiveType.LineStrip);
                 {
                     GL.Vertex3(svennWidth, wheelbase + svennDist, 0.0);

@@ -22,8 +22,6 @@ namespace AgOpenGPS
 
             int messWidth = messageString.Length;
             Width = messWidth * 15 + 120;
-            this.Left = 20;
-            this.Top = 20;
         }
 
         private void timer1_Tick(object sender, EventArgs e)

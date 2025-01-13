@@ -24,7 +24,8 @@ namespace AgOpenGPS
             keyboardString.SelectionLength = 0;
             keyboard1.Focus();
 
-            if (RegistrySettings.culture == "fr")
+            string language = Properties.Settings.Default.setF_culture;
+            if (language == "fr")
             {
                 this.Height = 575;
             }

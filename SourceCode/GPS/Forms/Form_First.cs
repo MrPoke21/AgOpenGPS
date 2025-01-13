@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows.Forms;
-using AgOpenGPS.Helpers;
 
 namespace AgOpenGPS
 {
@@ -28,10 +27,10 @@ namespace AgOpenGPS
 
         private void Form_About_Load(object sender, EventArgs e)
         {
-            lblVersion.Text = "Terms and Conditions of Version " + GitVersionInformation.SemVer;
+            lblVersion.Text = "Version " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture);
 
             // Add a link to the LinkLabel.
-            LinkLabel.Link link = new LinkLabel.Link { LinkData = "https://github.com/AgOpenGPS-Official/AgOpenGPS" };
+            LinkLabel.Link link = new LinkLabel.Link { LinkData = "https://github.com/farmerbriantee/AgOpenGPS" };
             linkLabelGit.Links.Add(link);
 
             // Add a link to the LinkLabel.
@@ -41,15 +40,11 @@ namespace AgOpenGPS
             };
             linkLabelCombineForum.Links.Add(linkCf);
 
-            if (!ScreenHelper.IsOnScreen(Bounds))
+            if (!mf.IsOnScreen(Location, Size, 1))
             {
                 Top = 0;
                 Left = 0;
             }
-
-            label1.Text = RegistrySettings.culture + " | " +
-                RegistrySettings.vehiclesDirectory + " -> " + 
-                RegistrySettings.vehicleFileName + ".xml";
         }
 
         private void button1_Click(object sender, EventArgs e)

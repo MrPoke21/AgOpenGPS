@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Windows.Forms;
-using AgLibrary.Logging;
 
 namespace AgOpenGPS
 {
@@ -122,7 +121,7 @@ namespace AgOpenGPS
             if (mf.KeypadToNUD((NudlessNumericUpDown)sender, this))
             {
                 Properties.Settings.Default.setGPS_jumpFixAlarmDistance = ((int)nudFixJumpDistance.Value);
-                //mf.jumpDistanceAlarm = Properties.Settings.Default.setGPS_dualHeadingOffset;
+                mf.jumpDistanceAlarm = Properties.Settings.Default.setGPS_dualHeadingOffset;
             }
         }
 
@@ -265,7 +264,6 @@ namespace AgOpenGPS
                 mf.ahrs.imuRoll += mf.ahrs.rollZero;
                 mf.ahrs.rollZero = mf.ahrs.imuRoll;
                 lblRollZeroOffset.Text = (mf.ahrs.rollZero).ToString("N2");
-                Log.EventWriter("Roll Zeroed with " + mf.ahrs.rollZero.ToString());
             }
             else
             {
@@ -277,9 +275,8 @@ namespace AgOpenGPS
         {
             mf.ahrs.rollZero = 0;
             lblRollZeroOffset.Text = "0.00";
-            Log.EventWriter("Roll Zero Offset Removed");
         }
-
+         
         private void btnResetIMU_Click(object sender, EventArgs e)
         {
             mf.ahrs.imuHeading = 99999;

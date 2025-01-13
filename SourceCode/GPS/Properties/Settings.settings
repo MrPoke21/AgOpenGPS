@@ -74,6 +74,12 @@
     <Setting Name="setMenu_isSkyOn" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="setF_culture" Type="System.String" Scope="User">
+      <Value Profile="(Default)">en</Value>
+    </Setting>
+    <Setting Name="setF_workingDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Default</Value>
+    </Setting>
     <Setting Name="setDisplay_lightbarCmPerPixel" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5</Value>
     </Setting>
@@ -135,7 +141,7 @@
       <Value Profile="(Default)">27, 151, 160</Value>
     </Setting>
     <Setting Name="setDisplay_colorFieldDay" Type="System.Drawing.Color" Scope="User">
-      <Value Profile="(Default)">145, 145, 145</Value>
+      <Value Profile="(Default)">100, 100, 125</Value>
     </Setting>
     <Setting Name="setDisplay_isDayMode" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -192,7 +198,7 @@
       <Value Profile="(Default)">230, 230, 230</Value>
     </Setting>
     <Setting Name="setDisplay_colorTextDay" Type="System.Drawing.Color" Scope="User">
-      <Value Profile="(Default)">Black</Value>
+      <Value Profile="(Default)">10, 10, 20</Value>
     </Setting>
     <Setting Name="setTram_isTramOnBackBuffer" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -228,7 +234,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="setAS_guidanceLookAheadTime" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">1.5</Value>
+      <Value Profile="(Default)">2.5</Value>
     </Setting>
     <Setting Name="setFeatures" Type="AgOpenGPS.CFeatureSettings" Scope="User">
       <Value Profile="(Default)" />
@@ -429,7 +435,7 @@
       <Value Profile="(Default)">0.1</Value>
     </Setting>
     <Setting Name="setVehicle_wheelbase" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">3.3</Value>
+      <Value Profile="(Default)">2.8</Value>
     </Setting>
     <Setting Name="setVehicle_hitchLength" Type="System.Double" Scope="User">
       <Value Profile="(Default)">-1</Value>
@@ -443,11 +449,14 @@
     <Setting Name="setVehicle_isSteerAxleAhead" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="setVehicle_vehicleName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Default Vehicle</Value>
+    </Setting>
     <Setting Name="setVehicle_slowSpeedCutoff" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0.5</Value>
     </Setting>
     <Setting Name="setVehicle_tankTrailingHitchLength" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">-3</Value>
+      <Value Profile="(Default)">3</Value>
     </Setting>
     <Setting Name="setVehicle_minCoverage" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">100</Value>
@@ -480,7 +489,7 @@
       <Value Profile="(Default)">2</Value>
     </Setting>
     <Setting Name="setVehicle_goalPointLookAheadMult" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">1.5</Value>
+      <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="stanleyDistanceErrorGain" Type="System.Double" Scope="User">
       <Value Profile="(Default)">1</Value>
@@ -627,7 +636,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="setAS_functionSpeedLimit" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">12</Value>
+      <Value Profile="(Default)">8</Value>
     </Setting>
     <Setting Name="setAS_maxSteerSpeed" Type="System.Double" Scope="User">
       <Value Profile="(Default)">15</Value>
@@ -744,7 +753,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="setGPS_jumpFixAlarmDistance" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+      <Value Profile="(Default)">20</Value>
     </Setting>
     <Setting Name="setAS_deadZoneDistance" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
@@ -756,31 +765,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="setTool_isDirectionMarkers" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="setAS_numGuideLines" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">10</Value>
-    </Setting>
-    <Setting Name="setAS_deadZoneDelay" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">5</Value>
-    </Setting>
-    <Setting Name="setTram_alpha" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">0.8</Value>
-    </Setting>
-    <Setting Name="setVehicle_goalPointAcquireFactor" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">0.9</Value>
-    </Setting>
-    <Setting Name="setBnd_isDrawPivot" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="setDisplay_isSectionLinesOn" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="setDisplay_isLineSmooth" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="setWindow_tramLineSize" Type="System.Drawing.Size" Scope="User">
-      <Value Profile="(Default)">921, 676</Value>
     </Setting>
   </Settings>
 </SettingsFile>

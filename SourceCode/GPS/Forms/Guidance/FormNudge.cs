@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using AgOpenGPS.Helpers;
 
 namespace AgOpenGPS
 {
@@ -41,7 +40,7 @@ namespace AgOpenGPS
             Size = Properties.Settings.Default.setWindow_formNudgeSize;
             UpdateMoveLabel();
 
-            if (!ScreenHelper.IsOnScreen(Bounds))
+            if (!mf.IsOnScreen(Location, Size, 1))
             {
                 Top = 0;
                 Left = 0;
@@ -72,6 +71,106 @@ namespace AgOpenGPS
                     lblOffset.Text = "< " + ((int)(mf.trk.gArr[mf.trk.idx].nudgeDistance * mf.m2InchOrCm * -1)).ToString() + mf.unitsInCm;
                 else
                     lblOffset.Text = ((int)(mf.trk.gArr[mf.trk.idx].nudgeDistance * mf.m2InchOrCm)).ToString() + " >" + mf.unitsInCm;
+            }
+        }
+
+        private void btnCycleLines_Click(object sender, EventArgs e)
+        {
+
+            if (mf.ct.isContourBtnOn)
+            {
+                mf.ct.SetLockToLine();
+                return;
+            }
+
+            if (mf.trk.gArr.Count == 0) return;
+
+            //reset to generate new reference
+            mf.ABLine.isABValid = false;
+            mf.curve.isCurveValid = false;
+
+            if (mf.isBtnAutoSteerOn)
+            {
+                mf.btnAutoSteer.PerformClick();
+            }
+
+            if (mf.trk.gArr.Count > 0)
+            {
+                bool isVis = false;
+
+                //make sure one is visible
+                for (int i = 0; i < mf.trk.gArr.Count; i++)
+                {
+                    if (mf.trk.gArr[i].isVisible)
+                    {
+                        isVis = true;
+                        break;
+                    }
+                }
+
+                if (!isVis) return;
+
+                while (isVis)
+                {
+                    mf.trk.idx++;
+
+                    if (mf.trk.idx > (mf.trk.gArr.Count - 1)) mf.trk.idx = 0;
+
+                    if (mf.trk.gArr[mf.trk.idx].isVisible) break;
+                }
+
+                mf.yt.ResetYouTurn();
+                UpdateMoveLabel();
+            }
+        }
+
+        private void btnCycleLinesBk_Click(object sender, EventArgs e)
+        {
+            if (mf.ct.isContourBtnOn)
+            {
+                mf.ct.SetLockToLine();
+                return;
+            }
+
+            if (mf.trk.idx == -1) return;
+
+            //reset to generate new reference
+            mf.ABLine.isABValid = false;
+            mf.curve.isCurveValid = false;
+
+            if (mf.isBtnAutoSteerOn)
+            {
+                mf.btnAutoSteer.PerformClick();
+            }
+
+            if (mf.trk.gArr.Count > 0)
+            {
+                bool isVis = false;
+
+                //make sure one is visible
+                for (int i = 0; i < mf.trk.gArr.Count; i++)
+                {
+                    if (mf.trk.gArr[i].isVisible)
+                    {
+                        isVis = true;
+                        break;
+                    }
+                }
+
+                if (!isVis) return;
+
+                while (isVis)
+                {
+                    mf.trk.idx--;
+
+                    if (mf.trk.idx < 0) mf.trk.idx = mf.trk.gArr.Count - 1;
+
+                    if (mf.trk.gArr[mf.trk.idx].isVisible) break;
+                }
+                UpdateMoveLabel();
+
+
+                mf.yt.ResetYouTurn();
             }
         }
 

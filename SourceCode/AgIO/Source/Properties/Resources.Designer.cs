@@ -293,16 +293,6 @@ namespace AgIO.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap FileSaveAs {
-            get {
-                object obj = ResourceManager.GetObject("FileSaveAs", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap GPS_Out {
             get {
                 object obj = ResourceManager.GetObject("GPS_Out", resourceCulture);
@@ -326,16 +316,6 @@ namespace AgIO.Properties {
         internal static System.Drawing.Bitmap LogNMEA {
             get {
                 object obj = ResourceManager.GetObject("LogNMEA", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap LogViewer {
-            get {
-                object obj = ResourceManager.GetObject("LogViewer", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -426,16 +406,6 @@ namespace AgIO.Properties {
         internal static System.Drawing.Bitmap RadioSettings {
             get {
                 object obj = ResourceManager.GetObject("RadioSettings", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap Reset_Default {
-            get {
-                object obj = ResourceManager.GetObject("Reset_Default", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
