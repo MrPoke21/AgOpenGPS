@@ -18,20 +18,20 @@ namespace AgIO
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            lblLatitude.Text = mf.latitude.ToString("N7");
-            lblLongitude.Text = mf.longitude.ToString("N7");
+            lblLatitude.Text = mf.latitude.ToString("N8");
+            lblLongitude.Text = mf.longitude.ToString("N8");
 
             ////other sat and GPS info
             lblFixQuality.Text = mf.FixQuality;
             lblSatsTracked.Text = mf.satellitesData.ToString();
-            lblHDOP.Text = mf.hdopData.ToString();
+            lblHDOP.Text = mf.hdopData.ToString("N1");
             lblSpeed.Text = mf.speedData.ToString("N1");
 
             lblRoll.Text = mf.rollData.ToString("N2");
-            lblIMURoll.Text = mf.imuRollData.ToString();
-            lblIMUPitch.Text = mf.imuPitchData.ToString();
-            lblIMUYawRate.Text = mf.imuYawRateData.ToString();
-            lblIMUHeading.Text = mf.imuHeadingData.ToString();
+            lblIMURoll.Text = mf.imuRollData.ToString("N2");
+            lblIMUPitch.Text = mf.imuPitchData.ToString("N2");
+            lblIMUYawRate.Text = mf.imuYawRateData.ToString("N2");
+            lblIMUHeading.Text = mf.imuHeadingData.ToString("N2");
 
             lblAge.Text = mf.ageData.ToString("N1");
 

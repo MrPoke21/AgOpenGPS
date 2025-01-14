@@ -464,7 +464,7 @@ namespace AgIO
 
             //send a hello to modules
             SendUDPMessage(helloFromAgIO, epModule);
-
+            SendSteerModulePort(helloFromAgIO, helloFromAgIO.Length);
 
             //if (isLogNMEA)
             //{
