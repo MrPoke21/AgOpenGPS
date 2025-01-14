@@ -24,9 +24,9 @@ namespace AgIO
             ageX100 = ushort.MaxValue;
 
         //imu data
-        public float imuHeadingData, imuHeading = ushort.MaxValue;
-        public float imuRollData, imuRoll = float.MaxValue, imuPitchData, imuPitch = float.MaxValue, 
-            imuYawRateData, imuYawRate = float.MaxValue;
+        public ushort imuHeadingData, imuHeading = ushort.MaxValue;
+        public short imuRollData, imuRoll = short.MaxValue, imuPitchData, imuPitch = short.MaxValue, 
+            imuYawRateData, imuYawRate = short.MaxValue;
 
         public byte fixQualityData, fixQuality = byte.MaxValue;
 
@@ -770,19 +770,19 @@ namespace AgIO
                 speedData = speed;
 
                 //imu heading
-                float.TryParse(words[12], NumberStyles.Float, CultureInfo.InvariantCulture, out imuHeading);
+                ushort.TryParse(words[12], NumberStyles.Float, CultureInfo.InvariantCulture, out imuHeading);
                 imuHeadingData = imuHeading;
 
                 //roll
-                float.TryParse(words[13], NumberStyles.Float, CultureInfo.InvariantCulture, out imuRoll);
+                short.TryParse(words[13], NumberStyles.Float, CultureInfo.InvariantCulture, out imuRoll);
                 imuRollData = imuRoll;
 
                 //Pitch
-                float.TryParse(words[14], NumberStyles.Float, CultureInfo.InvariantCulture, out imuPitch);
+                short.TryParse(words[14], NumberStyles.Float, CultureInfo.InvariantCulture, out imuPitch);
                 imuPitchData = imuPitch;
 
                 //YawRate
-                float.TryParse(words[15], NumberStyles.Float, CultureInfo.InvariantCulture, out imuYawRate);
+                short.TryParse(words[15], NumberStyles.Float, CultureInfo.InvariantCulture, out imuYawRate);
                 imuYawRateData = imuYawRate;
 
                 //always send because its probably the only one.
@@ -985,9 +985,9 @@ namespace AgIO
                     else return false;  
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //mf.WriteErrorLog("Validate Checksum" + e);
+                Log.EventWriter("Catch - > Validate NMEA Checksum" + ex.ToString());
                 return false;
             }
         }

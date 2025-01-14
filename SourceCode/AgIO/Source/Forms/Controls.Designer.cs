@@ -117,6 +117,11 @@ namespace AgIO
 
         private void btnUDP_Click(object sender, EventArgs e)
         {
+            if (RegistrySettings.profileName == "Default Profile")
+            {
+                TimedMessageBox(3000, "Using Default Profile", "Choose Existing or Create New Profile");
+                return;
+            }
             if (!Settings.Default.setUDP_isOn) SettingsEthernet();
             else SettingsUDP();
         }
@@ -128,6 +133,12 @@ namespace AgIO
 
         private void btnNTRIP_Click(object sender, EventArgs e)
         {
+            if (RegistrySettings.profileName == "Default Profile")
+            {
+                TimedMessageBox(3000, "Using Default Profile", "Choose Existing or Create New Profile");
+                return;
+            }
+
             SettingsNTRIP();
         }
 
@@ -138,6 +149,12 @@ namespace AgIO
 
         private void btnRadio_Click(object sender, EventArgs e)
         {
+            if (RegistrySettings.profileName == "Default Profile")
+            {
+                TimedMessageBox(3000, "Using Default Profile", "Choose Existing or Create New Profile");
+                return;
+            }
+
             SettingsRadio();
         }
 
@@ -198,6 +215,14 @@ namespace AgIO
         #endregion
 
         #region Menu Strip Items
+
+        private void toolStripLogViewer_Click(object sender, EventArgs e)
+        {
+            Form form = new FormEventViewer(Path.Combine(RegistrySettings.logsDirectory, "AgIO_Events_Log.txt"));
+            form.Show(this);
+            this.Activate();
+        }
+
         private void toolStripUDPMonitor_Click(object sender, EventArgs e)
         {
             ShowUDPMonitor();
@@ -215,6 +240,12 @@ namespace AgIO
 
         private void serialPassThroughToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (RegistrySettings.profileName == "Default Profile")
+            {
+                TimedMessageBox(3000, "Using Default Profile", "Choose Existing or Create New Profile");
+                return;
+            }
+
             if (isRadio_RequiredOn)
             {
                 TimedMessageBox(2000, "Radio NTRIP ON", "Turn it off before using Serial Pass Thru");
@@ -238,27 +269,27 @@ namespace AgIO
             }
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        private void toolStripMenuProfiles_Click(object sender, EventArgs e)
         {
-            //Save curent Settngs
-            using (var form = new FormCommSaver(this))
+            if (RegistrySettings.profileName == "Default Profile")
             {
-                form.ShowDialog(this);
+                TimedMessageBox(3000, "AgIO Default Profile Used", "Create or Choose a Profile");
             }
-        }
 
-        private void toolStripMenuItem2_Click(object sender, EventArgs e)
-        {
-            //Load new settings
-            using (var form = new FormCommPicker(this))
+            using (var form = new FormProfiles(this))
             {
                 form.ShowDialog(this);
-                if (form.DialogResult == DialogResult.OK)
+                if (form.DialogResult == DialogResult.Yes)
                 {
+                    Log.EventWriter("Program Reset: Saving or Selecting Profile");
+
+                    RegistrySettings.Save();
                     Application.Restart();
                     Environment.Exit(0);
                 }
             }
+            this.Text = "AgIO  v" + GitVersionInformation.MajorMinorPatch + "   Using Profile: " 
+                + RegistrySettings.profileName;
         }
 
         private void modSimToolStrip_Click(object sender, EventArgs e)
@@ -267,9 +298,7 @@ namespace AgIO
             if (processName.Length == 0)
             {
                 //Start application here
-                DirectoryInfo di = new DirectoryInfo(Application.StartupPath);
-                string strPath = di.ToString();
-                strPath += "\\ModSim.exe";
+                string strPath = Path.Combine(Application.StartupPath, "ModSim.exe");
 
                 try
                 {
@@ -281,6 +310,7 @@ namespace AgIO
                 catch
                 {
                     TimedMessageBox(2000, "No File Found", "Can't Find Simulator");
+                    Log.EventWriter("Catch -> Failed to load ModSim - Not Found");
                 }
             }
             else
@@ -417,9 +447,7 @@ namespace AgIO
             if (processName.Length == 0)
             {
                 //Start application here
-                DirectoryInfo di = new DirectoryInfo(Application.StartupPath);
-                string strPath = di.ToString();
-                strPath += "\\AgOpenGPS.exe";
+                string strPath = Path.Combine(Application.StartupPath, "AgOpenGPS.exe");
 
                 try
                 {
@@ -431,6 +459,7 @@ namespace AgIO
                 catch
                 {
                     TimedMessageBox(2000, "No File Found", "Can't Find AgOpenGPS");
+                    Log.EventWriter("Can't Find AgOpenGPS - File Not Found");
                 }
             }
             else
@@ -447,9 +476,7 @@ namespace AgIO
             if (processName.Length == 0)
             {
                 //Start application here
-                DirectoryInfo di = new DirectoryInfo(Application.StartupPath);
-                string strPath = di.ToString();
-                strPath += "\\GPS_Out.exe";
+                string strPath = Path.Combine(Application.StartupPath, "GPS_Out.exe");
 
                 try
                 {
@@ -461,6 +488,7 @@ namespace AgIO
                 catch
                 {
                     TimedMessageBox(2000, "No File Found", "Can't Find GPS_Out");
+                    Log.EventWriter("No File Found, Can't Find GPS_Out");
                 }
             }
             else
@@ -499,8 +527,7 @@ namespace AgIO
         }
 
         private ToolStripDropDownButton toolStripDropDownButton1;
-        private ToolStripMenuItem toolStripMenuItem1;
-        private ToolStripMenuItem toolStripMenuItem2;
+        private ToolStripMenuItem toolStripMenuProfiles;
         private ToolStripMenuItem deviceManagerToolStripMenuItem;
     }
 }

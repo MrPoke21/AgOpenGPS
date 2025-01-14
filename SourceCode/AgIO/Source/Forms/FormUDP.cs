@@ -14,7 +14,8 @@ namespace AgIO
         private readonly FormLoop mf = null;
 
         //used to send communication check pgn= C8 or 200
-        private byte[] sendIPToModules = { 0x80, 0x81, 0x7F, 201, 5, 201, 201, 192, 168, 5, 0xE5 };
+        private byte[] sendIPToModules = { 0x80, 0x81, 0x7F, 201, 5, 201, 201, 192, 168, 5, 0x47 };
+
         private byte[] ipCurrent = { 192, 168, 5 };
         private byte[] ipNew = { 192, 168, 5 };
 
@@ -131,7 +132,7 @@ namespace AgIO
 
             bool isSubnetMatchCard = false;
 
-            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0xE5 };
+            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0x47 };
 
             //Send out 255x4 to each installed network interface
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -184,8 +185,7 @@ namespace AgIO
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.Write("Bind Error = ");
-                                        Console.WriteLine(ex.ToString());
+                                        Log.EventWriter("Catch - > Socket Bind Error Scan UDP" + ex.ToString());
                                     }
 
                                     scanSocket.Dispose();
@@ -193,8 +193,7 @@ namespace AgIO
                             }
                             catch (Exception ex)
                             {
-                                Console.Write("nic Loop = ");
-                                Console.WriteLine(ex.ToString());
+                                Log.EventWriter("Catch - > Nic Loop exception in Scan" + ex.ToString());
                             }
                         }
                     }
@@ -219,13 +218,6 @@ namespace AgIO
                 sendIPToModules[7] = ipNew[0];
                 sendIPToModules[8] = ipNew[1];
                 sendIPToModules[9] = ipNew[2];
-
-                int crc = 0;
-                for (int i = 2; i + 1 < sendIPToModules.Length - 1; i++)
-                {
-                    crc += sendIPToModules[i];
-                }
-                sendIPToModules[sendIPToModules.Length - 1] = (byte)crc;
 
                 //loop thru all interfaces
                 foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -257,8 +249,7 @@ namespace AgIO
                                         }
                                         catch (Exception ex)
                                         {
-                                            Console.Write("Bind Error = ");
-                                            Console.WriteLine(ex.ToString());
+                                            Log.EventWriter("Catch - > Send Subnet Bind and Send: " + ex.ToString());
                                         }
 
                                         scanSocket.Dispose();
@@ -266,8 +257,7 @@ namespace AgIO
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.Write("nic Loop = ");
-                                    Console.WriteLine(ex.ToString());
+                                    Log.EventWriter("Catch - > Nic Loop Send Subnet: " + ex.ToString());
                                 }
                             }
                         }
@@ -340,18 +330,19 @@ namespace AgIO
 
         private void btnUDPOff_Click(object sender, EventArgs e)
         {
-
             Properties.Settings.Default.setUDP_isOn = false;
             Properties.Settings.Default.setUDP_isSendNMEAToUDP = false;
 
             Properties.Settings.Default.Save();
 
             mf.YesMessageBox("AgIO will Restart to Disable UDP Networking Features");
+            Log.EventWriter("Program Reset: Turning UDP OFF");
 
+            RegistrySettings.Save();
             Application.Restart();
             Environment.Exit(0);
-            Close();
 
+            Close();
         }
 
         private void btnAutoSet_Click(object sender, EventArgs e)

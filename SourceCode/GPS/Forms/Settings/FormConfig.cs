@@ -1,8 +1,10 @@
 ﻿//Please, if you use this, share the improvements
 
 using AgOpenGPS.Culture;
+using Microsoft.Win32;
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -113,8 +115,8 @@ namespace AgOpenGPS
             tboxVehicleNameSave.Focus();
 
             label29.Text = gStr.gsSaveAs;
+            label162.Text = gStr.gsNew;
             UpdateSummary();
-            //label3.Text = gStr.gsCurrent;
 
             if (!mf.IsOnScreen(Location, Size, 1))
             {
@@ -135,7 +137,7 @@ namespace AgOpenGPS
             mf.LoadSettings();
 
             //save current vehicle
-            SettingsIO.ExportAll(mf.vehiclesDirectory + mf.vehicleFileName + ".XML");
+            RegistrySettings.Save();
         }
 
         private void FixMinMaxSpinners()
@@ -225,7 +227,7 @@ namespace AgOpenGPS
         private void tabSummary_Enter(object sender, EventArgs e)
         {
             SectionFeetInchesTotalWidthLabelUpdate();
-            lblSummaryVehicleName.Text = Properties.Settings.Default.setVehicle_vehicleName;
+            lblSummaryVehicleName.Text = RegistrySettings.vehicleFileName;
             UpdateSummary();
         }
 
@@ -258,14 +260,17 @@ namespace AgOpenGPS
             chkDisplayStartFullScreen.Checked = Properties.Settings.Default.setDisplay_isStartFullScreen;
             chkSvennArrow.Checked = mf.isSvennArrowOn;
             chkDisplayExtraGuides.Checked = mf.isSideGuideLines;
-            chkDisplayLogNMEA.Checked = mf.isLogNMEA;
             chkDisplayPolygons.Checked = mf.isDrawPolygons;
             chkDisplayKeyboard.Checked = mf.isKeyboardOn;
             chkDisplayLogElevation.Checked = mf.isLogElevation;
             chkDirectionMarkers.Checked = Properties.Settings.Default.setTool_isDirectionMarkers;
+            chkSectionLines.Checked = Properties.Settings.Default.setDisplay_isSectionLinesOn;
+            chkLineSmooth.Checked = Properties.Settings.Default.setDisplay_isLineSmooth;
 
             if (mf.isMetric) rbtnDisplayMetric.Checked = true;
             else rbtnDisplayImperial.Checked = true;
+
+            nudNumGuideLines.Value = mf.ABLine.numGuideLines;
         }
 
         private void tabDisplay_Leave(object sender, EventArgs e)
@@ -276,6 +281,8 @@ namespace AgOpenGPS
         private void rbtnDisplayImperial_Click(object sender, EventArgs e)
         {
             mf.TimedMessageBox(2000, "Units Set", "Imperial");
+            Log.EventWriter("Units To Imperial");
+
             mf.isMetric = false;
             Properties.Settings.Default.setMenu_isMetric = mf.isMetric;
             Properties.Settings.Default.Save();
@@ -286,6 +293,8 @@ namespace AgOpenGPS
         private void rbtnDisplayMetric_Click(object sender, EventArgs e)
         {
             mf.TimedMessageBox(2000, "Units Set", "Metric");
+            Log.EventWriter("Units to Metric");
+
             mf.isMetric = true;
             Properties.Settings.Default.setMenu_isMetric = mf.isMetric;
             Properties.Settings.Default.Save();
@@ -294,5 +303,13 @@ namespace AgOpenGPS
             //FormConfig_Load(this, e);
         }
 
+        private void nudNumGuideLines_Click(object sender, EventArgs e)
+        {
+            if (mf.KeypadToNUD((NudlessNumericUpDown)sender, this))
+            {
+                mf.ABLine.numGuideLines = (int)nudNumGuideLines.Value;
+            }
+
+        }
     }
 }

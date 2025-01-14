@@ -12,7 +12,7 @@ namespace AgOpenGPS
     public partial class FormFieldISOXML : Form
     {
         //class variables
-        private readonly FormGPS mf = null;
+        private readonly FormGPS mf;
 
         private double easting, norting, lonK, latK;
 
@@ -21,7 +21,7 @@ namespace AgOpenGPS
         private string xmlFilename;
         private XmlNodeList pfd;
 
-        private int idxFieldSelected = -1;
+        private int idxFieldSelected;
 
         public FormFieldISOXML(Form _callingForm)
         {
@@ -35,7 +35,6 @@ namespace AgOpenGPS
         {
             tboxFieldName.Text = "";
             btnBuildFields.Enabled = false;
-            string newFieldDir = mf.fieldsDirectory;
 
             label1.Text = gStr.gsEditFieldName;
 
@@ -52,7 +51,7 @@ namespace AgOpenGPS
                 Filter = "XML files (*.XML)|*.XML",
 
                 //the initial directory, fields, for the open dialog
-                InitialDirectory = mf.fieldsDirectory
+                InitialDirectory = RegistrySettings.fieldsDirectory
             };
 
             //was a file selected
@@ -61,8 +60,10 @@ namespace AgOpenGPS
                 xmlFilename = ofd.FileName;
                 //xmlFilename = "C:\\Users\\Grizs\\Documents\\AgOpenGPS\\Fields\\xml\\TASKDATARich3.XML";
 
-                iso = new XmlDocument();
-                iso.PreserveWhitespace = false;
+                iso = new XmlDocument
+                {
+                    PreserveWhitespace = false
+                };
                 iso.Load(xmlFilename);
 
                 //Partial Field Group
@@ -74,8 +75,7 @@ namespace AgOpenGPS
                     //scan thru all the fields
                     foreach (XmlNode nodePFD in pfd)
                     {
-                        double area;
-                        double.TryParse(nodePFD.Attributes["D"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out area);
+                        double.TryParse(nodePFD.Attributes["D"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double area);
                         area *= 0.0001;
 
                         // PFD - A=ID, C=FieldName, D = Area in sq m
@@ -146,9 +146,10 @@ namespace AgOpenGPS
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    mf.TimedMessageBox(2000, "Exception", "Catch Exception");
+                    Log.EventWriter("Creating new iso field " + ex.ToString());
+                    MessageBox.Show(gStr.gsError, ex.ToString());
                     return;
                 }
 
@@ -204,11 +205,9 @@ namespace AgOpenGPS
         private void btnBuildFields_Click(object sender, EventArgs e)
         {
             mf.currentFieldDirectory = tboxFieldName.Text.Trim();
-            string dirNewField = mf.fieldsDirectory + mf.currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, mf.currentFieldDirectory);
 
             //create new field files.
-            string directoryName = Path.GetDirectoryName(dirNewField);
-
             if ((!string.IsNullOrEmpty(directoryName)) && (Directory.Exists(directoryName)))
             {
                 MessageBox.Show(gStr.gsChooseADifferentName, gStr.gsDirectoryExists, MessageBoxButtons.OK, MessageBoxIcon.Stop);
@@ -260,9 +259,11 @@ namespace AgOpenGPS
                 lonK = lon / counter;
                 latK = lat / counter;
             }
-            catch (Exception)
+            catch (Exception ei)
             {
                 mf.TimedMessageBox(2000, "Exception", "Catch Exception");
+                Log.EventWriter("ISOXML Exception Loading " + ei.ToString());
+
                 return;
             }
 
@@ -313,22 +314,20 @@ namespace AgOpenGPS
 
                     if (!mf.isJobStarted)
                     {
-                        using (FormTimedMessage form = new FormTimedMessage(3000, gStr.gsFieldNotOpen, gStr.gsCreateNewField))
-                        { form.Show(this); }
+                        mf.TimedMessageBox(3000, gStr.gsFieldNotOpen, gStr.gsCreateNewField);
                         return;
                     }
-                    string myFileName, dirField;
+                    string myFileName;
 
                     //get the directory and make sure it exists, create if not
-                    dirField = mf.fieldsDirectory + mf.currentFieldDirectory + "\\";
-                    directoryName = Path.GetDirectoryName(dirField);
+                    directoryName = Path.Combine(RegistrySettings.fieldsDirectory, mf.currentFieldDirectory);
 
                     if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
                     { Directory.CreateDirectory(directoryName); }
 
                     myFileName = "Field.txt";
 
-                    using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+                    using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
                     {
                         //Write out the date
                         writer.WriteLine(DateTime.Now.ToString("yyyy-MMMM-dd hh:mm:ss tt", CultureInfo.InvariantCulture));
@@ -356,7 +355,7 @@ namespace AgOpenGPS
             }
             catch (Exception ex)
             {
-                mf.WriteErrorLog("Creating new field " + ex);
+                Log.EventWriter("Creating new iso field " + ex.ToString());
 
                 MessageBox.Show(gStr.gsError, ex.ToString());
                 mf.currentFieldDirectory = "";
@@ -410,9 +409,11 @@ namespace AgOpenGPS
                     mf.bnd.bndList.Add(NewList);
                 }
             }
-            catch (Exception)
+            catch (Exception ew)
             {
-                return;
+                Log.EventWriter("Creating new iso field " + ew.ToString());
+
+                MessageBox.Show(gStr.gsError, ew.ToString());
             }
 
             //load inner boundaries next only if outer existed
@@ -457,9 +458,11 @@ namespace AgOpenGPS
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ed)
                 {
-                    return;
+                    Log.EventWriter("Creating new iso field " + ed.ToString());
+
+                    MessageBox.Show(gStr.gsError, ed.ToString());
                 }
             }
             //Headland
@@ -506,9 +509,10 @@ namespace AgOpenGPS
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    return;
+                    Log.EventWriter("Creating new iso field " + ex.ToString());
+                    MessageBox.Show(gStr.gsError, ex.ToString());
                 }
             }
 
@@ -606,7 +610,7 @@ namespace AgOpenGPS
 
                                         for (int i = 0; i < cnt; i++)
                                         {
-                                            vec3 pt3 = new vec3();
+                                            vec3 pt3;
                                             //calculate the point inside the boundary
                                             double.TryParse(nodePart.ChildNodes[0].ChildNodes[0].ChildNodes[i].Attributes["C"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out latK);
                                             double.TryParse(nodePart.ChildNodes[0].ChildNodes[0].ChildNodes[i].Attributes["D"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out lonK);
@@ -672,9 +676,10 @@ namespace AgOpenGPS
                     }//is GGP
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return;
+                Log.EventWriter("Creating new iso field " + ex.ToString());
+                MessageBox.Show(gStr.gsError, ex.ToString());
             }
 
             //AB Lines or curves when > 2 PNT's
@@ -754,7 +759,7 @@ namespace AgOpenGPS
 
                                 for (int i = 0; i < cnt; i++)
                                 {
-                                    vec3 pt3 = new vec3();
+                                    vec3 pt3;
                                     //calculate the point inside the boundary
                                     double.TryParse(nodePart.ChildNodes[i].Attributes["C"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out latK);
                                     double.TryParse(nodePart.ChildNodes[i].Attributes["D"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out lonK);
@@ -817,9 +822,10 @@ namespace AgOpenGPS
                     }//is LSG
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return;
+                Log.EventWriter("Creating new iso field " + ex.ToString());
+                MessageBox.Show(gStr.gsError, ex.ToString());
             }
 
             mf.FileSaveBoundary();

@@ -26,7 +26,7 @@ namespace AgIO
         public  static int baudRateIMU = 38400;
 
         public  static string portNameSteerModule = "***";
-        public  static int baudRateSteerModule = 115200;
+        public  static int baudRateSteerModule = 38400;
 
         public  static string portNameMachineModule = "***";
         public  static int baudRateMachineModule = 38400;
@@ -77,10 +77,10 @@ namespace AgIO
         //public SerialPort spModule3 = new SerialPort(portNameModule3, baudRateModule3, Parity.None, 8, StopBits.One);
         
         //lists for parsing incoming bytes
-        private byte[] pgnSteerModule = new byte[128];
-        private byte[] pgnMachineModule = new byte[128];
+        private byte[] pgnSteerModule = new byte[22];
+        private byte[] pgnMachineModule = new byte[22];
         //private byte[] pgnModule3 = new byte[262];
-        private byte[] pgnIMU = new byte[128];
+        private byte[] pgnIMU = new byte[22];
 
         #region IMUSerialPort //--------------------------------------------------------------------
         private void ReceiveIMUPort(byte[] Data)
@@ -121,7 +121,7 @@ namespace AgIO
             try { spIMU.Open(); }
             catch (Exception e)
             {
-                //WriteErrorLog("Opening Machine Port" + e.ToString());
+                Log.EventWriter("Opening Machine Port" + e.ToString());
 
                 MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
 
@@ -156,7 +156,7 @@ namespace AgIO
                 try
                 {
                     spIMU.Close();
-                    byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 0xCC, 0x0D, 0x0A };
+                    byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 0xCC };
 
                     //tell AOG IMU is disconnected
                     SendToLoopBackMessageAOG(imuClose);
@@ -164,7 +164,7 @@ namespace AgIO
 
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing Machine Serial Port" + e.ToString());
+                    Log.EventWriter("Closing Machine Serial Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated??");
                 }
 
@@ -177,7 +177,7 @@ namespace AgIO
 
             else
             {
-                byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 0xCC, 0x0D, 0x0A };
+                byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 0xCC };
 
                 //tell AOG IMU is disconnected
                 SendToLoopBackMessageAOG(imuClose);
@@ -211,26 +211,26 @@ namespace AgIO
                     {
                         a = (byte)spIMU.ReadByte();
 
-                        switch (ByteList[127])
+                        switch (ByteList[21])
                         {
                             case 0: //find 0x80
                                 {
-                                    if (a == 128) ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                    if (a == 128) ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 1:  //find 0x81   
                                 {
-                                    if (a == 129) ByteList[ByteList[127]++] = a;
+                                    if (a == 129) ByteList[ByteList[21]++] = a;
                                     else
                                     {
                                         if (a == 181)
                                         {
-                                            ByteList[127] = 0;
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[21] = 0;
+                                            ByteList[ByteList[21]++] = a;
                                         }
-                                        else ByteList[127] = 0;
+                                        else ByteList[21] = 0;
                                     }
                                     break;
                                 }
@@ -238,31 +238,31 @@ namespace AgIO
                             case 2: //Source Address (7F)
                                 {
                                     if (a < 128 && a > 120)
-                                        ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                        ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 3: //PGN ID
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             case 4: //Num of data bytes
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             default: //Data load and Checksum
                                 {
-                                    if (ByteList[127] > 4)
+                                    if (ByteList[21] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[127]) < length)
+                                        if ((ByteList[21]) < length)
                                         {
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[ByteList[21]++] = a;
                                             break;
                                         }
                                         else
@@ -278,12 +278,12 @@ namespace AgIO
                                             if (a == (byte)(CK_A))
                                             {
                                                 length++;
-                                                ByteList[ByteList[127]++] = (byte)CK_A;
+                                                ByteList[ByteList[21]++] = (byte)CK_A;
                                                 BeginInvoke((MethodInvoker)(() => ReceiveIMUPort(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
-                                            ByteList[127] = 0;
+                                            ByteList[21] = 0;
                                             return;
                                         }
                                     }
@@ -293,9 +293,9 @@ namespace AgIO
                         }
                     }
                 }
-                catch (Exception)
+                catch
                 {
-                    ByteList[127] = 0;
+                    ByteList[21] = 0;
                 }
             }
         }
@@ -318,14 +318,11 @@ namespace AgIO
                 {
                     spSteerModule.Write(items, 0, numItems);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
+                    Log.EventWriter("Catch - > Serial Steer module disconnect: " + ex.ToString());
                     CloseSteerModulePort();
                 }
-            }
-            else
-            {
-                OpenSteerModulePort();
             }
         }
 
@@ -343,7 +340,6 @@ namespace AgIO
 
             try
             {
-                System.Threading.Thread.Sleep(1000); // 500 was not enough
                 spSteerModule.Open();
                 //short delay for the use of mega2560, it is working in debugmode with breakpoint
                 System.Threading.Thread.Sleep(1000); // 500 was not enough
@@ -351,9 +347,9 @@ namespace AgIO
             }
             catch (Exception e)
             {
-                //WriteErrorLog("Opening Machine Port" + e.ToString());
+                Log.EventWriter("Opening Machine Port" + e.ToString());
 
-                //MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
+                MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
 
 
                 Properties.Settings.Default.setPort_wasSteerModuleConnected = false;
@@ -374,7 +370,7 @@ namespace AgIO
             }
         }
 
-        //close the Steer port
+        //close the machine port
         public void CloseSteerModulePort()
         {
             if (spSteerModule.IsOpen)
@@ -383,7 +379,7 @@ namespace AgIO
                 try { spSteerModule.Close(); }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing Machine Serial Port" + e.ToString());
+                    Log.EventWriter("Closing Machine Serial Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated??");
                 }
 
@@ -422,26 +418,26 @@ namespace AgIO
 
                         a = (byte)spSteerModule.ReadByte();
 
-                        switch (ByteList[127])
+                        switch (ByteList[21])
                         {
                             case 0: //find 0x80
                                 {
-                                    if (a == 128) ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                    if (a == 128) ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 1:  //find 0x81   
                                 {
-                                    if (a == 129) ByteList[ByteList[127]++] = a;
+                                    if (a == 129) ByteList[ByteList[21]++] = a;
                                     else
                                     {
                                         if (a == 181)
                                         {
-                                            ByteList[127] = 0;
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[21] = 0;
+                                            ByteList[ByteList[21]++] = a;
                                         }
-                                        else ByteList[127] = 0;
+                                        else ByteList[21] = 0;
                                     }
                                     break;
                                 }
@@ -449,31 +445,31 @@ namespace AgIO
                             case 2: //Source Address (7F)
                                 {
                                     if (a < 128 && a > 120)
-                                        ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                        ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 3: //PGN ID
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             case 4: //Num of data bytes
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             default: //Data load and Checksum
                                 {
-                                    if (ByteList[127] > 4)
+                                    if (ByteList[21] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[127]) < length)
+                                        if ((ByteList[21]) < length)
                                         {
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[ByteList[21]++] = a;
                                             break;
                                         }
                                         else
@@ -489,12 +485,12 @@ namespace AgIO
                                             if (a == (byte)(CK_A))
                                             {
                                                 length++;
-                                                ByteList[ByteList[127]++] = (byte)CK_A;
-                                                BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(ByteList.Take(length).ToArray())));
+                                                ByteList[ByteList[21]++] = (byte)CK_A;
+                                                BeginInvoke((MethodInvoker)(() => ReceiveSteerModulePort(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
-                                            ByteList[127] = 0;
+                                            ByteList[21] = 0;
                                             return;
                                         }
                                     }
@@ -506,7 +502,7 @@ namespace AgIO
                 }
                 catch (Exception)
                 {
-                    ByteList[127] = 0;
+                    ByteList[21] = 0;
                 }
             }
         }
@@ -534,8 +530,9 @@ namespace AgIO
                 {
                     spMachineModule.Write(items, 0, numItems);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.EventWriter("Catch - > Serial Machine module disconnect: " + ex.ToString());
                     CloseMachineModulePort();
                 }
             }
@@ -562,7 +559,7 @@ namespace AgIO
             }
             catch (Exception e)
             {
-                //WriteErrorLog("Opening Machine Port" + e.ToString());
+                Log.EventWriter("Opening Machine Port" + e.ToString());
 
                 MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
 
@@ -594,7 +591,7 @@ namespace AgIO
                 try { spMachineModule.Close(); }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing Machine Serial Port" + e.ToString());
+                    Log.EventWriter("Closing Machine Serial Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated??");
                 }
 
@@ -633,26 +630,26 @@ namespace AgIO
 
                         a = (byte)spMachineModule.ReadByte();
 
-                        switch (ByteList[127])
+                        switch (ByteList[21])
                         {
                             case 0: //find 0x80
                                 {
-                                    if (a == 128) ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                    if (a == 128) ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 1:  //find 0x81   
                                 {
-                                    if (a == 129) ByteList[ByteList[127]++] = a;
+                                    if (a == 129) ByteList[ByteList[21]++] = a;
                                     else
                                     {
                                         if (a == 181)
                                         {
-                                            ByteList[127] = 0;
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[21] = 0;
+                                            ByteList[ByteList[21]++] = a;
                                         }
-                                        else ByteList[127] = 0;
+                                        else ByteList[21] = 0;
                                     }
                                     break;
                                 }
@@ -660,31 +657,31 @@ namespace AgIO
                             case 2: //Source Address (7F)
                                 {
                                     if (a < 128 && a > 120)
-                                        ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
+                                        ByteList[ByteList[21]++] = a;
+                                    else ByteList[21] = 0;
                                     break;
                                 }
 
                             case 3: //PGN ID
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             case 4: //Num of data bytes
                                 {
-                                    ByteList[ByteList[127]++] = a;
+                                    ByteList[ByteList[21]++] = a;
                                     break;
                                 }
 
                             default: //Data load and Checksum
                                 {
-                                    if (ByteList[127] > 4)
+                                    if (ByteList[21] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[127]) < length)
+                                        if ((ByteList[21]) < length)
                                         {
-                                            ByteList[ByteList[127]++] = a;
+                                            ByteList[ByteList[21]++] = a;
                                             break;
                                         }
                                         else
@@ -699,13 +696,13 @@ namespace AgIO
                                             //if checksum matches finish and update main thread
                                             if (a == (byte)(CK_A))
                                             {
-                                                ByteList[ByteList[127]++] = (byte)CK_A;
+                                                ByteList[ByteList[21]++] = (byte)CK_A;
                                                 length++;
                                                 BeginInvoke((MethodInvoker)(() => ReceiveMachineModulePort(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
-                                            ByteList[127] = 0;
+                                            ByteList[21] = 0;
                                             return;
                                         }
                                     }
@@ -717,7 +714,7 @@ namespace AgIO
                 }
                 catch (Exception)
                 {
-                    ByteList[127] = 0;
+                    ByteList[21] = 0;
                 }
             }
         }
@@ -843,26 +840,26 @@ namespace AgIO
 
         //                a = (byte)spModule3.ReadByte();
 
-        //                switch (ByteList[127])
+        //                switch (ByteList[21])
         //                {
         //                    case 0: //find 0x80
         //                        {
-        //                            if (a == 128) ByteList[ByteList[127]++] = a;
-        //                            else ByteList[127] = 0;
+        //                            if (a == 128) ByteList[ByteList[21]++] = a;
+        //                            else ByteList[21] = 0;
         //                            break;
         //                        }
 
         //                    case 1:  //find 0x81   
         //                        {
-        //                            if (a == 129) ByteList[ByteList[127]++] = a;
+        //                            if (a == 129) ByteList[ByteList[21]++] = a;
         //                            else
         //                            {
         //                                if (a == 181)
         //                                {
-        //                                    ByteList[127] = 0;
-        //                                    ByteList[ByteList[127]++] = a;
+        //                                    ByteList[21] = 0;
+        //                                    ByteList[ByteList[21]++] = a;
         //                                }
-        //                                else ByteList[127] = 0;
+        //                                else ByteList[21] = 0;
         //                            }
         //                            break;
         //                        }
@@ -870,31 +867,31 @@ namespace AgIO
         //                    case 2: //Source Address (7F)
         //                        {
         //                            if (a < 128 && a > 120)
-        //                                ByteList[ByteList[127]++] = a;
-        //                            else ByteList[127] = 0;
+        //                                ByteList[ByteList[21]++] = a;
+        //                            else ByteList[21] = 0;
         //                            break;
         //                        }
 
         //                    case 3: //PGN ID
         //                        {
-        //                            ByteList[ByteList[127]++] = a;
+        //                            ByteList[ByteList[21]++] = a;
         //                            break;
         //                        }
 
         //                    case 4: //Num of data bytes
         //                        {
-        //                            ByteList[ByteList[127]++] = a;
+        //                            ByteList[ByteList[21]++] = a;
         //                            break;
         //                        }
 
         //                    default: //Data load and Checksum
         //                        {
-        //                            if (ByteList[127] > 4)
+        //                            if (ByteList[21] > 4)
         //                            {
         //                                int length = ByteList[4] + totalHeaderByteCount;
-        //                                if ((ByteList[127]) < length)
+        //                                if ((ByteList[21]) < length)
         //                                {
-        //                                    ByteList[ByteList[127]++] = a;
+        //                                    ByteList[ByteList[21]++] = a;
         //                                    break;
         //                                }
         //                                else
@@ -909,12 +906,12 @@ namespace AgIO
         //                                    //if checksum matches finish and update main thread
         //                                    if (a == (byte)(CK_A))
         //                                    {
-        //                                        ByteList[ByteList[127]++] = (byte)CK_A;
+        //                                        ByteList[ByteList[21]++] = (byte)CK_A;
         //                                        BeginInvoke((MethodInvoker)(() => ReceiveModule3Port(ByteList.Take(length).ToArray())));
         //                                    }
 
         //                                    //clear out the current pgn
-        //                                    ByteList[127] = 0;
+        //                                    ByteList[21] = 0;
         //                                    return;
         //                                }
         //                            }
@@ -926,7 +923,7 @@ namespace AgIO
         //        }
         //        catch (Exception)
         //        {
-        //            ByteList[127] = 0;
+        //            ByteList[21] = 0;
         //        }
         //    }
         //}
@@ -951,7 +948,6 @@ namespace AgIO
             catch (Exception)
             {
             }
-
         }
 
         public void OpenGPSPort()
@@ -973,8 +969,10 @@ namespace AgIO
             }
 
             try { spGPS.Open(); }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.EventWriter("Catch - > Serial GPS Open Fail: " + ex.ToString());
+
             }
 
             if (spGPS.IsOpen)
@@ -999,7 +997,7 @@ namespace AgIO
                 try { spGPS.Close(); }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing GPS Port" + e.ToString());
+                    Log.EventWriter("Closing GPS Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated?");
                 }
 
@@ -1090,8 +1088,9 @@ namespace AgIO
             }
 
             try { spGPS2.Open(); }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.EventWriter("Catch - > Serial GPS Open Fail: " + ex.ToString());
             }
 
             if (spGPS2.IsOpen)
@@ -1113,7 +1112,7 @@ namespace AgIO
                 try { spGPS2.Close(); }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing GPS2 Port" + e.ToString());
+                    Log.EventWriter("Closing GPS2 Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated?");
                 }
 
@@ -1158,8 +1157,9 @@ namespace AgIO
             }
 
             try { spRtcm.Open(); }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.EventWriter("Catch - > Serial RTCM Open Fail: " + ex.ToString());
             }
 
             if (spRtcm.IsOpen)
@@ -1183,7 +1183,7 @@ namespace AgIO
                 try { spRtcm.Close(); }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing GPS Port" + e.ToString());
+                    Log.EventWriter("Closing RTCM Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated?");
                 }
             }

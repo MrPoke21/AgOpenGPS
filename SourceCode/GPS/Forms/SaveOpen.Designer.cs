@@ -27,9 +27,8 @@ namespace AgOpenGPS
             //if (bnd.bndList.Count < 1) return;//If no Bnd, Quit
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\zISOXML\\v3\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "zISOXML", "v3");
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
@@ -40,7 +39,7 @@ namespace AgOpenGPS
                 XmlWriterSettings settings = new XmlWriterSettings();
                 settings.Indent = true;
                 settings.IndentChars = "  ";
-                XmlWriter xml = XmlWriter.Create(dirField + myFileName, settings);
+                XmlWriter xml = XmlWriter.Create(Path.Combine(directoryName, myFileName), settings);
 
                 xml.WriteStartElement("ISO11783_TaskData");//Settings
                 xml.WriteAttributeString("DataTransferOrigin", "1");
@@ -211,9 +210,10 @@ namespace AgOpenGPS
                 xml.Close();
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //throw;
+                TimedMessageBox(2000, "ISOXML Exception ", e.ToString());
+                Log.EventWriter("Export field as ISOXML Exception" + e);
             }
         }
 
@@ -222,9 +222,8 @@ namespace AgOpenGPS
             int lineCounter = 0;
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\zISOXML\\v4\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "zISOXML", "v4");
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
            
@@ -235,7 +234,7 @@ namespace AgOpenGPS
                 XmlWriterSettings settings = new XmlWriterSettings();
                 settings.Indent = true;
                 settings.IndentChars = "  ";
-                XmlWriter xml = XmlWriter.Create(dirField + myFileName, settings);
+                XmlWriter xml = XmlWriter.Create(Path.Combine(directoryName, myFileName), settings);
 
                 xml.WriteStartElement("ISO11783_TaskData");//Settings
                 xml.WriteAttributeString("DataTransferOrigin", "1");
@@ -451,7 +450,7 @@ namespace AgOpenGPS
         }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Log.EventWriter("Export Field as ISOXML: " + e.Message);
             }
 
     /*
@@ -470,13 +469,12 @@ namespace AgOpenGPS
 
         public void FileSaveHeadLines()
         {
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+            if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\Headlines.txt";
+            string filename = Path.Combine(directoryName, "Headlines.txt");
 
             int cnt = hdl.tracksArr.Count;
 
@@ -524,7 +522,7 @@ namespace AgOpenGPS
                 }
                 catch (Exception er)
                 {
-                    WriteErrorLog("Saving Head Lines" + er.ToString());
+                    Log.EventWriter("Saving Head Lines" + er.ToString());
 
                     return;
                 }
@@ -536,13 +534,12 @@ namespace AgOpenGPS
             hdl.tracksArr?.Clear();
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\Headlines.txt";
+            string filename = Path.Combine(directoryName, "Headlines.txt");
 
             if (!File.Exists(filename))
             {
@@ -559,6 +556,7 @@ namespace AgOpenGPS
             if (!File.Exists(filename))
             {
                 TimedMessageBox(2000, gStr.gsFileError, "Missing Headlines File");
+                Log.EventWriter("Load Field, Missing Headlines File");
             }
             else
             {
@@ -620,16 +618,14 @@ namespace AgOpenGPS
                     {
                         hdl.tracksArr?.Clear();
 
-                        var form = new FormTimedMessage(2000, "Headline Error", "Lines Deleted");
-                        form.Show(this);
+                        TimedMessageBox(2000, "Headline Error", "Lines Deleted");
 
-                        dirField = fieldsDirectory + currentFieldDirectory + "\\";
-                        directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+                        directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-                        if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+                        if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
                         { Directory.CreateDirectory(directoryName); }
 
-                        filename = directoryName + "\\Headlines.txt";
+                        filename = Path.Combine(directoryName, "Headlines.txt");
 
                         using (StreamWriter writer = new StreamWriter(filename, false))
                         {
@@ -641,7 +637,7 @@ namespace AgOpenGPS
                             }
                             catch { }
                         }
-                        WriteErrorLog("Load Head Lines" + er.ToString());
+                        Log.EventWriter("Load Head Lines" + er.ToString());
                     }
                 }
             }
@@ -651,13 +647,12 @@ namespace AgOpenGPS
 
         public void FileSaveTracks()
         {
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+            if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\TrackLines.txt";
+            string filename = Path.Combine(directoryName, "TrackLines.txt");
 
             int cnt = trk.gArr.Count;
 
@@ -713,7 +708,7 @@ namespace AgOpenGPS
                 }
                 catch (Exception er)
                 {
-                    WriteErrorLog("Saving Curve Line" + er.ToString());
+                    Log.EventWriter("Saving Curve Line" + er.ToString());
 
                     return;
                 }
@@ -730,13 +725,12 @@ namespace AgOpenGPS
             trk.gArr?.Clear();
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\TrackLines.txt";
+            string filename = Path.Combine(directoryName, "TrackLines.txt");
 
             if (!File.Exists(filename))
             {
@@ -753,6 +747,7 @@ namespace AgOpenGPS
             if (!File.Exists(filename))
             {
                 TimedMessageBox(2000, gStr.gsFileError, "Missing Tracks File");
+                Log.EventWriter("Load Field, Missing Tracks File");
             }
             else
             {
@@ -819,9 +814,8 @@ namespace AgOpenGPS
                     }
                     catch (Exception er)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsCurveLineFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Curve Line" + er.ToString());
+                        TimedMessageBox(2000, gStr.gsCurveLineFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        Log.EventWriter("Load Curve Line" + er.ToString());
                     }
                 }
             }
@@ -831,13 +825,12 @@ namespace AgOpenGPS
 
         public void FileSaveCurveLines()
         {
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+            if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\CurveLines.txt";
+            string filename = Path.Combine(directoryName, "CurveLines.txt");
 
             int cnt = trk.gArr.Count;
 
@@ -879,7 +872,7 @@ namespace AgOpenGPS
                 }
                 catch (Exception er)
                 {
-                    WriteErrorLog("Saving Curve Line" + er.ToString());
+                    Log.EventWriter("Saving Curve Line" + er.ToString());
 
                     return;
                 }
@@ -889,13 +882,12 @@ namespace AgOpenGPS
         public void FileLoadCurveLines()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\CurveLines.txt";
+            string filename = Path.Combine(directoryName, "CurveLines.txt");
 
             if (!File.Exists(filename))
             {
@@ -912,6 +904,7 @@ namespace AgOpenGPS
             if (!File.Exists(filename))
             {
                 TimedMessageBox(2000, gStr.gsFileError, "Missing Curve File");
+                Log.EventWriter("Load Field, Missing Curve File");
             }
             else
             {
@@ -985,9 +978,9 @@ namespace AgOpenGPS
                     }
                     catch (Exception er)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsCurveLineFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Curve Line" + er.ToString());
+                        TimedMessageBox(2000, gStr.gsCurveLineFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("Load Curve Line" + er.ToString());
                     }
                 }
             }
@@ -996,14 +989,13 @@ namespace AgOpenGPS
         public void FileSaveABLines()
         {
             //make sure at least a global blank AB Line file exists
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             //get the file of previous AB Lines
-            if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+            if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\ABLines.txt";
+            string filename = Path.Combine(directoryName, "ABLines.txt");
             int cnt = trk.gArr.Count;
 
             using (StreamWriter writer = new StreamWriter(filename, false))
@@ -1031,13 +1023,12 @@ namespace AgOpenGPS
         public void FileLoadABLines()
         {
             //make sure at least a global blank AB Line file exists
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField).ToString(CultureInfo.InvariantCulture);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
+            if (!string.IsNullOrEmpty(directoryName) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            string filename = directoryName + "\\ABLines.txt";
+            string filename = Path.Combine(directoryName, "ABLines.txt");
 
             if (!File.Exists(filename))
             {
@@ -1087,9 +1078,9 @@ namespace AgOpenGPS
                     }
                     catch (Exception er)
                     {
-                        var form = new FormTimedMessage(2000, "AB Line Corrupt", "Please delete it!!!");
-                        form.Show(this);
-                        WriteErrorLog("FieldOpen, Loading ABLine, Corrupt ABLine File" + er);
+                        TimedMessageBox(2000, "AB Line Corrupt", "Please delete it!!!");
+                        
+                        Log.EventWriter("FieldOpen, Loading ABLine, Corrupt ABLine File" + er);
                     }
                 }
             }
@@ -1114,7 +1105,7 @@ namespace AgOpenGPS
                 case "Resume":
                     {
                         //Either exit or update running save
-                        fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Field.txt";
+                        fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Field.txt");
                         if (!File.Exists(fileAndDirectory)) fileAndDirectory = "Cancel";
                         break;
                     }
@@ -1125,7 +1116,7 @@ namespace AgOpenGPS
                         OpenFileDialog ofd = new OpenFileDialog();
 
                         //the initial directory, fields, for the open dialog
-                        ofd.InitialDirectory = fieldsDirectory;
+                        ofd.InitialDirectory = RegistrySettings.fieldsDirectory;
 
                         //When leaving dialog put windows back where it was
                         ofd.RestoreDirectory = true;
@@ -1214,11 +1205,11 @@ namespace AgOpenGPS
 
                 catch (Exception e)
                 {
-                    WriteErrorLog("While Opening Field" + e.ToString());
+                    Log.EventWriter("While Opening Field" + e.ToString());
 
-                    var form = new FormTimedMessage(2000, gStr.gsFieldFileIsCorrupt, gStr.gsChooseADifferentField);
+                    TimedMessageBox(2000, gStr.gsFieldFileIsCorrupt, gStr.gsChooseADifferentField);
 
-                    form.Show(this);
+                    
                     JobClose();
                     return;
                 }
@@ -1232,11 +1223,11 @@ namespace AgOpenGPS
 
             
             //section patches
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Sections.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Sections.txt");
             if (!File.Exists(fileAndDirectory))
             {
-                var form = new FormTimedMessage(2000, gStr.gsMissingSectionFile, gStr.gsButFieldIsLoaded);
-                form.Show(this);
+                TimedMessageBox(2000, gStr.gsMissingSectionFile, gStr.gsButFieldIsLoaded);
+                
                 //return;
             }
             else
@@ -1295,10 +1286,10 @@ namespace AgOpenGPS
                     }
                     catch (Exception e)
                     {
-                        WriteErrorLog("Section file" + e.ToString());
+                        Log.EventWriter("Section file" + e.ToString());
 
-                        var form = new FormTimedMessage(2000, "Section File is Corrupt", gStr.gsButFieldIsLoaded);
-                        form.Show(this);
+                        TimedMessageBox(2000, "Section File is Corrupt", gStr.gsButFieldIsLoaded);
+                        
                     }
 
                 }
@@ -1306,20 +1297,20 @@ namespace AgOpenGPS
                 //was old version prior to v4
                 if (isv3)
                 {
-                        //Append the current list to the field file
-                        using (StreamWriter writer = new StreamWriter((fieldsDirectory + currentFieldDirectory + "\\Sections.txt"), false))
-                        {
-                        }
+                    //Append the current list to the field file
+                    using (StreamWriter writer = new StreamWriter(Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Sections.txt"), false))
+                    {
+                    }
                 }
             }
 
             // Contour points ----------------------------------------------------------------------------
 
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Contour.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Contour.txt");
             if (!File.Exists(fileAndDirectory))
             {
-                var form = new FormTimedMessage(2000, gStr.gsMissingContourFile, gStr.gsButFieldIsLoaded);
-                form.Show(this);
+                TimedMessageBox(2000, gStr.gsMissingContourFile, gStr.gsButFieldIsLoaded);
+                
                 //return;
             }
             
@@ -1358,10 +1349,10 @@ namespace AgOpenGPS
                     }
                     catch (Exception e)
                     {
-                        WriteErrorLog("Loading Contour file" + e.ToString());
+                        Log.EventWriter("Loading Contour file" + e.ToString());
 
-                        var form = new FormTimedMessage(2000, gStr.gsContourFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
+                        TimedMessageBox(2000, gStr.gsContourFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        
                     }
                 }
             }
@@ -1370,11 +1361,11 @@ namespace AgOpenGPS
             // Flags -------------------------------------------------------------------------------------------------
 
             //Either exit or update running save
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Flags.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Flags.txt");
             if (!File.Exists(fileAndDirectory))
             {
-                var form = new FormTimedMessage(2000, gStr.gsMissingFlagsFile, gStr.gsButFieldIsLoaded);
-                form.Show(this);
+                TimedMessageBox(2000, gStr.gsMissingFlagsFile, gStr.gsButFieldIsLoaded);
+                
             }
 
             else
@@ -1437,20 +1428,20 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsFlagFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("FieldOpen, Loading Flags, Corrupt Flag File" + e.ToString());
+                        TimedMessageBox(2000, gStr.gsFlagFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("FieldOpen, Loading Flags, Corrupt Flag File" + e.ToString());
                     }
                 }
             }
 
             //Boundaries
             //Either exit or update running save
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Boundary.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Boundary.txt");
             if (!File.Exists(fileAndDirectory))
             {
-                var form = new FormTimedMessage(2000, gStr.gsMissingBoundaryFile, gStr.gsButFieldIsLoaded);
-                form.Show(this);
+                TimedMessageBox(2000, gStr.gsMissingBoundaryFile, gStr.gsButFieldIsLoaded);
+                
             }
             else
             {
@@ -1532,15 +1523,15 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsBoundaryLineFilesAreCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Boundary Line" + e.ToString());
+                        TimedMessageBox(2000, gStr.gsBoundaryLineFilesAreCorrupt, gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("Load Boundary Line" + e.ToString());
                     }
                 }
             }
 
             // Headland  -------------------------------------------------------------------------------------------------
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Headland.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Headland.txt");
 
             if (File.Exists(fileAndDirectory))
             {
@@ -1583,9 +1574,9 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, "Headland File is Corrupt", "But Field is Loaded");
-                        form.Show(this);
-                        WriteErrorLog("Load Headland Loop" + e.ToString());
+                        TimedMessageBox(2000, "Headland File is Corrupt", "But Field is Loaded");
+                        
+                        Log.EventWriter("Load Headland Loop" + e.ToString());
                     }
                 }
             }
@@ -1608,7 +1599,7 @@ namespace AgOpenGPS
             btnHydLift.Visible = (((sett & 2) == 2) && bnd.isHeadlandOn); 
 
             //trams ---------------------------------------------------------------------------------
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\Tram.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Tram.txt");
 
             tram.tramBndOuterArr?.Clear();
             tram.tramBndInnerArr?.Clear();
@@ -1698,23 +1689,23 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, "Tram is corrupt", gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Boundary Line" + e.ToString());
+                        TimedMessageBox(2000, "Tram is corrupt", gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("Load Boundary Line" + e.ToString());
                     }
                 }
             }
 
-            //if (Directory.Exists(fieldsDirectory + currentFieldDirectory))
+            //if (Directory.Exists(RegistrySettings.fieldsDirectory + currentFieldDirectory))
             //{
-            //    foreach (string file in Directory.GetFiles(fieldsDirectory + currentFieldDirectory, "*.shp", SearchOption.TopDirectoryOnly))
+            //    foreach (string file in Directory.GetFiles(RegistrySettings.fieldsDirectory + currentFieldDirectory, "*.shp", SearchOption.TopDirectoryOnly))
             //    {
-            //        shape.Main(fieldsDirectory + currentFieldDirectory + "\\" + Path.GetFileNameWithoutExtension(file));
+            //        shape.Main(RegistrySettings.fieldsDirectory + currentFieldDirectory + "\\" + Path.GetFileNameWithoutExtension(file));
             //    }
             //}
 
             //Recorded Path
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\RecPath.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "RecPath.txt");
             if (File.Exists(fileAndDirectory))
             {
                 using (StreamReader reader = new StreamReader(fileAndDirectory))
@@ -1751,9 +1742,9 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsRecordedPathFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Recorded Path" + e.ToString());
+                        TimedMessageBox(2000, gStr.gsRecordedPathFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("Load Recorded Path" + e.ToString());
                     }
                 }
             }
@@ -1761,7 +1752,7 @@ namespace AgOpenGPS
             worldGrid.isGeoMap = false;
 
             //Back Image
-            fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\BackPic.txt";
+            fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "BackPic.txt");
             if (File.Exists(fileAndDirectory))
             {
                 using (StreamReader reader = new StreamReader(fileAndDirectory))
@@ -1790,7 +1781,7 @@ namespace AgOpenGPS
 
                     if (worldGrid.isGeoMap)
                     {
-                        fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\BackPic.png";
+                        fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "BackPic.png");
                         if (File.Exists(fileAndDirectory))
                         {
                             var bitmap = new Bitmap(Image.FromFile(fileAndDirectory));
@@ -1827,22 +1818,20 @@ namespace AgOpenGPS
 
             if (!isJobStarted)
             {
-                using (var form = new FormTimedMessage(3000, gStr.gsFieldNotOpen, gStr.gsCreateNewField))
-                { form.Show(this); }
+                TimedMessageBox(3000, gStr.gsFieldNotOpen, gStr.gsCreateNewField);
                 return;
             }
-            string myFileName, dirField;
+            string myFileName;
 
             //get the directory and make sure it exists, create if not
-            dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             myFileName = "Field.txt";
 
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //Write out the date
                 writer.WriteLine(DateTime.Now.ToString("yyyy-MMMM-dd hh:mm:ss tt", CultureInfo.InvariantCulture));
@@ -1872,23 +1861,22 @@ namespace AgOpenGPS
 
             //if (!isJobStarted)
             //{
-            //    using (var form = new FormTimedMessage(3000, "Ooops, Job Not Started", "Start a Job First"))
-            //    { form.Show(this); }
+            //    using (TimedMessageBox(3000, "Ooops, Job Not Started", "Start a Job First"))
+            //    {  }
             //    return;
             //}
 
-            string myFileName, dirField;
+            string myFileName;
 
             //get the directory and make sure it exists, create if not
-            dirField = fieldsDirectory + currentFieldDirectory + "\\";
-            string directoryName = Path.GetDirectoryName(dirField);
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             myFileName = "Elevation.txt";
 
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //Write out the date
                 writer.WriteLine(DateTime.Now.ToString("yyyy-MMMM-dd hh:mm:ss tt", CultureInfo.InvariantCulture));
@@ -1917,7 +1905,7 @@ namespace AgOpenGPS
             if (patchSaveList.Count() > 0)
             {
                 //Append the current list to the field file
-                using (StreamWriter writer = new StreamWriter((fieldsDirectory + currentFieldDirectory + "\\Sections.txt"), true))
+                using (StreamWriter writer = new StreamWriter(Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Sections.txt"), true))
                 {
                     //for each patch, write out the list of triangles to the file
                     foreach (var triList in patchSaveList)
@@ -1945,16 +1933,15 @@ namespace AgOpenGPS
             //10.1728031317344,0.723157039771303 -easting, northing
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName = "Sections.txt";
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //write paths # of sections
                 //writer.WriteLine("$Sectionsv4");
@@ -1968,16 +1955,15 @@ namespace AgOpenGPS
             //10.1728031317344,0.723157039771303 -easting, northing
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName = "Boundary.txt";
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //write paths # of sections
                 writer.WriteLine("$Boundary");
@@ -1992,16 +1978,15 @@ namespace AgOpenGPS
             //10.1728031317344,0.723157039771303 -easting, northing
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName = "Flags.txt";
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //write paths # of sections
                 //writer.WriteLine("$Sectionsv4");
@@ -2015,16 +2000,15 @@ namespace AgOpenGPS
             //64.697,0.168,-21.654,0 - east, heading, north, altitude
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName = "Contour.txt";
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 writer.WriteLine("$Contour");
             }
@@ -2040,7 +2024,7 @@ namespace AgOpenGPS
             if (contourSaveList.Count() > 0)
             {
                 //Append the current list to the field file
-                using (StreamWriter writer = new StreamWriter((fieldsDirectory + currentFieldDirectory + "\\Contour.txt"), true))
+                using (StreamWriter writer = new StreamWriter(Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Contour.txt"), true))
                 {
 
                     //for every new chunk of patch in the whole section
@@ -2068,14 +2052,13 @@ namespace AgOpenGPS
         public void FileSaveBoundary()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + "Boundary.Txt"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "Boundary.Txt")))
             {
                 writer.WriteLine("$Boundary");
                 for (int i = 0; i < bnd.bndList.Count; i++)
@@ -2099,14 +2082,13 @@ namespace AgOpenGPS
         public void FileSaveTram()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + "Tram.Txt"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "Tram.Txt")))
             {
                 writer.WriteLine("$Tram");
 
@@ -2158,14 +2140,13 @@ namespace AgOpenGPS
         public void FileSaveBackPic()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + "BackPic.Txt"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "BackPic.Txt")))
             {
                 writer.WriteLine("$BackPic");
                 //outer track of outer boundary tram
@@ -2192,14 +2173,13 @@ namespace AgOpenGPS
         public void FileSaveHeadland()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + "Headland.Txt"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "Headland.Txt")))
             {
                 writer.WriteLine("$Headland");
 
@@ -2224,16 +2204,15 @@ namespace AgOpenGPS
         public void FileCreateRecPath()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName = "RecPath.txt";
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //write paths # of sections
                 writer.WriteLine("$RecPath");
@@ -2245,17 +2224,16 @@ namespace AgOpenGPS
         public void FileSaveRecPath(string name = "RecPath.Txt")
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
-            //string fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\RecPath.txt";
+            //string fileAndDirectory = RegistrySettings.fieldsDirectory + currentFieldDirectory + "\\RecPath.txt";
             //if (!File.Exists(fileAndDirectory)) FileCreateRecPath();
 
             //write out the file
-            using (StreamWriter writer = new StreamWriter((dirField + name)))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, name)))
             {
                 writer.WriteLine("$RecPath");
                 writer.WriteLine(recPath.recList.Count.ToString(CultureInfo.InvariantCulture));
@@ -2280,7 +2258,7 @@ namespace AgOpenGPS
         {
             string line;
             //Recorded Path
-            string fileAndDirectory = fieldsDirectory + currentFieldDirectory + "\\RecPath.txt";
+            string fileAndDirectory = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "RecPath.txt");
             if (File.Exists(fileAndDirectory))
             {
                 using (StreamReader reader = new StreamReader(fileAndDirectory))
@@ -2314,9 +2292,9 @@ namespace AgOpenGPS
 
                     catch (Exception e)
                     {
-                        var form = new FormTimedMessage(2000, gStr.gsRecordedPathFileIsCorrupt, gStr.gsButFieldIsLoaded);
-                        form.Show(this);
-                        WriteErrorLog("Load Recorded Path" + e.ToString());
+                        TimedMessageBox(2000, gStr.gsRecordedPathFileIsCorrupt, gStr.gsButFieldIsLoaded);
+                        
+                        Log.EventWriter("Load Recorded Path" + e.ToString());
                     }
                 }
             }
@@ -2332,14 +2310,13 @@ namespace AgOpenGPS
             //533172,5927719,12 - offset easting, northing, zone
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             //use Streamwriter to create and overwrite existing flag file
-            using (StreamWriter writer = new StreamWriter(dirField + "Flags.txt"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "Flags.txt")))
             {
                 try
                 {
@@ -2364,112 +2341,35 @@ namespace AgOpenGPS
 
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message + "\n Cannot write to file.");
-                    WriteErrorLog("Saving Flags" + e.ToString());
+                    TimedMessageBox(2000, "Error", e.Message + "\n Cannot write to file.");
+                    Log.EventWriter("Saving Flags" + e.ToString());
                     return;
                 }
             }
         }
 
-        //save all the flag markers
-        //public void FileSaveABLine()
-        //{
-        //    //Saturday, February 11, 2017  -->  7:26:52 AM
-
-        //    //get the directory and make sure it exists, create if not
-        //    string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-
-        //    string directoryName = Path.GetDirectoryName(dirField);
-        //    if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
-        //    { Directory.CreateDirectory(directoryName); }
-
-        //    //use Streamwriter to create and overwrite existing ABLine file
-        //    using (StreamWriter writer = new StreamWriter(dirField + "ABLine.txt"))
-        //    {
-        //        try
-        //        {
-        //            //write out the ABLine
-        //            writer.WriteLine("$ABLine");
-
-        //            //true or false if ABLine is set
-        //            if (ABLine.isABLineSet) writer.WriteLine(true);
-        //            else writer.WriteLine(false);
-
-        //            writer.WriteLine(ABLine.abHeading.ToString(CultureInfo.InvariantCulture));
-        //            writer.WriteLine(ABLine.refPtA.easting.ToString(CultureInfo.InvariantCulture) + "," + ABLine.refPtA.northing.ToString(CultureInfo.InvariantCulture));
-        //            writer.WriteLine(ABLine.refPtB.easting.ToString(CultureInfo.InvariantCulture) + "," + ABLine.refPtB.northing.ToString(CultureInfo.InvariantCulture));
-        //            writer.WriteLine(ABLine.tramPassEvery.ToString(CultureInfo.InvariantCulture) + "," + ABLine.passBasedOn.ToString(CultureInfo.InvariantCulture));
-        //        }
-
-        //        catch (Exception e)
-        //        {
-        //            Console.WriteLine(e.Message + "\n Cannot write to file.");
-        //            WriteErrorLog("Saving AB Line" + e.ToString());
-
-        //            return;
-        //        }
-
-        //    }
-        //}
-
-        //save all the flag markers
-        //public void FileSaveCurveLine()
-        //{
-        //    //Saturday, February 11, 2017  -->  7:26:52 AM
-
-        //    //get the directory and make sure it exists, create if not
-        //    string dirField = fieldsDirectory + currentFieldDirectory + "\\";
-
-        //    string directoryName = Path.GetDirectoryName(dirField);
-        //    if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
-        //    { Directory.CreateDirectory(directoryName); }
-
-        //    //use Streamwriter to create and overwrite existing ABLine file
-        //    using (StreamWriter writer = new StreamWriter(dirField + "CurveLine.txt"))
-        //    {
-        //        try
-        //        {
-        //            //write out the ABLine
-        //            writer.WriteLine("$CurveLine");
-
-        //            //write out the heading
-        //            writer.WriteLine(curve.refCurve.heading.ToString(CultureInfo.InvariantCulture));
-
-        //            //write out the points of ref line
-        //            writer.WriteLine(curve.refCurve.curvePts.Count.ToString(CultureInfo.InvariantCulture));
-        //            if (curve.refCurve.curvePts.Count > 0)
-        //            {
-        //                for (int j = 0; j < curve.refCurve.curvePts.Count; j++)
-        //                    writer.WriteLine(Math.Round(curve.refCurve.curvePts[j].easting, 3).ToString(CultureInfo.InvariantCulture) + "," +
-        //                                        Math.Round(curve.refCurve.curvePts[j].northing, 3).ToString(CultureInfo.InvariantCulture) + "," +
-        //                                            Math.Round(curve.refCurve.curvePts[j].heading, 5).ToString(CultureInfo.InvariantCulture));
-        //            }
-        //        }
-
-        //        catch (Exception e)
-        //        {
-        //            WriteErrorLog("Saving Curve Line" + e.ToString());
-
-        //            return;
-        //        }
-
-        //    }
-        //}
-
-        //save nmea sentences
-        public void FileSaveNMEA()
+        public void FileSaveSystemEvents()
         {
-            using (StreamWriter writer = new StreamWriter("zAOG_log.txt", true))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(RegistrySettings.logsDirectory, "AgOpenGPS_Events_Log.txt"), true))
             {
-                writer.Write(pn.logNMEASentence.ToString());
+                writer.Write(Log.sbEvents);
+                Log.sbEvents.Clear();
             }
-            pn.logNMEASentence.Clear();
         }
+
+        //public void FileSaveMissedEvents()
+        //{
+        //    using (StreamWriter writer = new StreamWriter(Path.Combine(logsDirectory, "Missed_Events_Log.txt"), true))
+        //    {
+        //        writer.Write(sbMissedSentence);
+        //        sbMissedSentence.Clear();
+        //    }
+        //}
 
         //save nmea sentences
         public void FileSaveElevation()
         {
-            using (StreamWriter writer = new StreamWriter((fieldsDirectory + currentFieldDirectory + "\\Elevation.txt"), true))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory, "Elevation.txt"), true))
             {
                 writer.Write(sbGrid.ToString());
             }
@@ -2485,16 +2385,15 @@ namespace AgOpenGPS
             pn.ConvertLocalToWGS84(flagPts[flagNumber - 1].northing, flagPts[flagNumber - 1].easting, out lat, out lon);
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName;
             myFileName = "Flag.kml";
 
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //match new fix to current position
 
@@ -2531,16 +2430,15 @@ namespace AgOpenGPS
         {
 
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName;
             myFileName = "Flag.kml";
 
-            using (StreamWriter writer = new StreamWriter(dirField + myFileName))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, myFileName)))
             {
                 //match new fix to current position
 
@@ -2575,14 +2473,13 @@ namespace AgOpenGPS
         public void FileMakeKMLFromCurrentPosition(double lat, double lon)
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
 
-            using (StreamWriter writer = new StreamWriter(dirField + "CurrentPosition.kml"))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(directoryName, "CurrentPosition.kml")))
             {
 
                 writer.WriteLine(@"<?xml version=""1.0"" encoding=""UTF-8""?>     ");
@@ -2611,16 +2508,15 @@ namespace AgOpenGPS
         public void ExportFieldAs_KML()
         {
             //get the directory and make sure it exists, create if not
-            string dirField = fieldsDirectory + currentFieldDirectory + "\\";
+            string directoryName = Path.Combine(RegistrySettings.fieldsDirectory, currentFieldDirectory);
 
-            string directoryName = Path.GetDirectoryName(dirField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             { Directory.CreateDirectory(directoryName); }
 
             string myFileName;
             myFileName = "Field.kml";
 
-            XmlTextWriter kml = new XmlTextWriter(dirField + myFileName, Encoding.UTF8);
+            XmlTextWriter kml = new XmlTextWriter(Path.Combine(directoryName, myFileName), Encoding.UTF8);
 
             kml.Formatting = Formatting.Indented;
             kml.Indentation = 3;
@@ -2928,9 +2824,8 @@ namespace AgOpenGPS
         {
 
             //get the directory and make sure it exists, create if not
-            string dirAllField = fieldsDirectory + "\\";
+            string directoryName = RegistrySettings.fieldsDirectory;
 
-            string directoryName = Path.GetDirectoryName(dirAllField);
             if ((directoryName.Length > 0) && (!Directory.Exists(directoryName)))
             {
                 return; //We have no fields to aggregate.
@@ -2939,7 +2834,7 @@ namespace AgOpenGPS
             string myFileName;
             myFileName = "AllFields.kml";
 
-            XmlTextWriter kml = new XmlTextWriter(dirAllField + myFileName, Encoding.UTF8);
+            XmlTextWriter kml = new XmlTextWriter(Path.Combine(directoryName, myFileName), Encoding.UTF8);
 
             kml.Formatting = Formatting.Indented;
             kml.Indentation = 3;
@@ -2951,13 +2846,13 @@ namespace AgOpenGPS
             foreach(String dir in Directory.EnumerateDirectories(directoryName).OrderBy(d => new DirectoryInfo(d).Name).ToArray())
             //loop
             {
-                if (!File.Exists(dir + "\\" + "Field.kml")) continue;
+                if (!File.Exists(Path.Combine(dir, "Field.kml"))) continue;
 
                 directoryName = Path.GetFileName(dir);
                 kml.WriteStartElement("Folder");
                 kml.WriteElementString("name", directoryName);
 
-                var lines = File.ReadAllLines(dir + "\\" + "Field.kml");
+                var lines = File.ReadAllLines(Path.Combine(dir, "Field.kml"));
                 LinkedList<string> linebuffer = new LinkedList<string>();
                 for( var i = 3; i < lines.Length-2; i++)  //We want to skip the first 3 and last 2 lines
                 {

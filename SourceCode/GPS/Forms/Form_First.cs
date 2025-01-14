@@ -27,10 +27,10 @@ namespace AgOpenGPS
 
         private void Form_About_Load(object sender, EventArgs e)
         {
-            lblVersion.Text = "Version " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture);
+            lblVersion.Text = "Terms and Conditions of Version " + GitVersionInformation.SemVer;
 
             // Add a link to the LinkLabel.
-            LinkLabel.Link link = new LinkLabel.Link { LinkData = "https://github.com/farmerbriantee/AgOpenGPS" };
+            LinkLabel.Link link = new LinkLabel.Link { LinkData = "https://github.com/AgOpenGPS-Official/AgOpenGPS" };
             linkLabelGit.Links.Add(link);
 
             // Add a link to the LinkLabel.
@@ -45,6 +45,10 @@ namespace AgOpenGPS
                 Top = 0;
                 Left = 0;
             }
+
+            label1.Text = RegistrySettings.culture + " | " +
+                RegistrySettings.vehiclesDirectory + " -> " + 
+                RegistrySettings.vehicleFileName + ".xml";
         }
 
         private void button1_Click(object sender, EventArgs e)

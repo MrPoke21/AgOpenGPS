@@ -55,15 +55,9 @@ namespace AgIO
             }
 
             try { sp.Open(); }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //WriteErrorLog("Opening Machine Port" + e.ToString());
-
-                //MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
-
-                //Properties.Settings.Default.setPort_wasConnected = false;
-                //Properties.Settings.Default.Save();
-                //wasConnectedLastRun = false;
+                Log.EventWriter("Catch - > Open Arduino Serial" + ex.ToString());
             }
 
             if (sp.IsOpen)
@@ -88,7 +82,7 @@ namespace AgIO
                 }
                 catch (Exception e)
                 {
-                    //WriteErrorLog("Closing Machine Serial Port" + e.ToString());
+                    Log.EventWriter("Catch -> Closing Machine Serial Port" + e.ToString());
                     MessageBox.Show(e.Message, "Connection already terminated??");
                 }
 
@@ -107,6 +101,7 @@ namespace AgIO
                 }
                 catch (Exception)
                 {
+
                 }
             }
         }
