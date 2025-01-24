@@ -844,8 +844,8 @@ namespace AgOpenGPS
                 if (mf.font.isFontOn)
                 {
                     GL.Color3(0.40f, 0.90f, 0.95f);
-                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].curvePts[0].easting, mf.trk.gArr[mf.trk.idx].curvePts[0].northing, "&A");
-                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].curvePts[mf.trk.gArr[mf.trk.idx].curvePts.Count - 1].easting, mf.trk.gArr[mf.trk.idx].curvePts[mf.trk.gArr[mf.trk.idx].curvePts.Count - 1].northing, "&B");
+                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptA.easting, mf.trk.gArr[mf.trk.idx].ptA.northing, "&A");
+                    mf.font.DrawText3D(mf.trk.gArr[mf.trk.idx].ptB.easting, mf.trk.gArr[mf.trk.idx].ptB.northing, "&B");
                 }
 
                 //just draw ref and smoothed line if smoothing window is open

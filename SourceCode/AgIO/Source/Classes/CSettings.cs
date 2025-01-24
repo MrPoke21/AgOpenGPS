@@ -107,18 +107,18 @@ namespace AgIO
                 }
 
                 //opening the subkey
-                RegistryKey regKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\AgIO");
+                RegistryKey regKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\AgOpenGPS");
 
                 //create default keys if not existing
                 if (regKey == null)
                 {
-                    RegistryKey Key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgIO");
+                    RegistryKey Key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgOpenGPS");
 
                     //storing the values
                     Key.SetValue("Language", "en");
                     Key.SetValue("ProfileName", "Default Profile");
                     Key.Close();
-                    Log.EventWriter("Registry -> SubKey AgIO and Keys Created\r");
+                    Log.EventWriter("Registry -> SubKey AgOpenGPS and Keys Created\r");
                 }
                 else
                 {
@@ -127,16 +127,16 @@ namespace AgIO
                         //Profile File Name from Registry Key
                         if (regKey.GetValue("ProfileName") == null || regKey.GetValue("ProfileName").ToString() == null)
                         {
-                            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgIO");
+                            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgOpenGPS");
                             key.SetValue("ProfileName", "Default Profile");
                             Log.EventWriter("Registry -> Key Profile Name was null and Created");
                         }
                         else
                         {
                             //Culture from Registry Key
-                            if (regKey.GetValue("AgOne_Culture") == null || regKey.GetValue("Language").ToString() == "")
+                            if (regKey.GetValue("Language") == null || regKey.GetValue("Language").ToString() == "")
                             {
-                                RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgIO");
+                                RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgOpenGPS");
                                 key.SetValue("Language", "en");
                                 Log.EventWriter("Registry -> Culture was null and Created");
                             }
@@ -209,7 +209,7 @@ namespace AgIO
         {
             Properties.Settings.Default.Save();
 
-            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgIO");
+            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgOpenGPS");
             try
             {
                 key.SetValue("ProfileName", profileName);
@@ -231,9 +231,9 @@ namespace AgIO
 
         public static void Reset()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\AgIO");
+            Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\AgOpenGPS");
 
-            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgIO");
+            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AgOpenGPS");
             try
             {
                 key.SetValue("ProfileName", "Default Profile");

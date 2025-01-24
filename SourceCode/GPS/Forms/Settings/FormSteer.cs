@@ -473,9 +473,9 @@ namespace AgOpenGPS
                         cboxPressureSensor.Checked = false;
                         cboxCurrentSensor.Checked = false;
                         label61.Visible = true;
-                        lblPercentFS.Visible = true;
+                        lblPercentFS.Visible = false;
                         nudMaxCounts.Visible = true;
-                        pbarSensor.Visible = true;
+                        pbarSensor.Visible = false;
                         hsbarSensor.Visible = false;
                         lblhsbarSensor.Visible = false;
                         label61.Text = gStr.gsEncoderCounts;

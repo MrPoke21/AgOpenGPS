@@ -48,6 +48,7 @@
             this.lblPercentFS = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPP = new System.Windows.Forms.TabPage();
+            this.label16 = new System.Windows.Forms.Label();
             this.label71 = new System.Windows.Forms.Label();
             this.label69 = new System.Windows.Forms.Label();
             this.label21 = new System.Windows.Forms.Label();
@@ -56,12 +57,13 @@
             this.label32 = new System.Windows.Forms.Label();
             this.lblHoldLookAhead = new System.Windows.Forms.Label();
             this.hsbarHoldLookAhead = new System.Windows.Forms.HScrollBar();
-            this.lblPureIntegral = new System.Windows.Forms.Label();
             this.hsbarIntegralPurePursuit = new System.Windows.Forms.HScrollBar();
             this.label26 = new System.Windows.Forms.Label();
             this.label24 = new System.Windows.Forms.Label();
             this.label20 = new System.Windows.Forms.Label();
             this.label18 = new System.Windows.Forms.Label();
+            this.lblAcquirePP = new System.Windows.Forms.Label();
+            this.lblPureIntegral = new System.Windows.Forms.Label();
             this.tabStan = new System.Windows.Forms.TabPage();
             this.label74 = new System.Windows.Forms.Label();
             this.label73 = new System.Windows.Forms.Label();
@@ -235,8 +237,6 @@
             this.button2 = new System.Windows.Forms.Button();
             this.pboxSendSteer = new System.Windows.Forms.PictureBox();
             this.btnSendSteerConfigPGN = new System.Windows.Forms.Button();
-            this.lblAcquirePP = new System.Windows.Forms.Label();
-            this.label16 = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabPP.SuspendLayout();
             this.tabStan.SuspendLayout();
@@ -533,6 +533,19 @@
             this.tabPP.Size = new System.Drawing.Size(365, 346);
             this.tabPP.TabIndex = 16;
             // 
+            // label16
+            // 
+            this.label16.AutoSize = true;
+            this.label16.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label16.ForeColor = System.Drawing.Color.Black;
+            this.label16.Location = new System.Drawing.Point(127, 159);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(69, 19);
+            this.label16.TabIndex = 548;
+            this.label16.Text = "Acquire:";
+            this.label16.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label16.Visible = false;
+            // 
             // label71
             // 
             this.label71.AutoSize = true;
@@ -630,17 +643,6 @@
             this.hsbarHoldLookAhead.Value = 25;
             this.hsbarHoldLookAhead.ValueChanged += new System.EventHandler(this.hsbarHoldLookAhead_ValueChanged);
             // 
-            // lblPureIntegral
-            // 
-            this.lblPureIntegral.Font = new System.Drawing.Font("Tahoma", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblPureIntegral.ForeColor = System.Drawing.Color.Black;
-            this.lblPureIntegral.Location = new System.Drawing.Point(5, 236);
-            this.lblPureIntegral.Name = "lblPureIntegral";
-            this.lblPureIntegral.Size = new System.Drawing.Size(50, 35);
-            this.lblPureIntegral.TabIndex = 350;
-            this.lblPureIntegral.Text = "20";
-            this.lblPureIntegral.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
             // hsbarIntegralPurePursuit
             // 
             this.hsbarIntegralPurePursuit.LargeChange = 1;
@@ -695,6 +697,30 @@
             this.label18.TabIndex = 300;
             this.label18.Text = "Look Ahead";
             this.label18.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblAcquirePP
+            // 
+            this.lblAcquirePP.AutoSize = true;
+            this.lblAcquirePP.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAcquirePP.ForeColor = System.Drawing.Color.Black;
+            this.lblAcquirePP.Location = new System.Drawing.Point(190, 159);
+            this.lblAcquirePP.Name = "lblAcquirePP";
+            this.lblAcquirePP.Size = new System.Drawing.Size(34, 19);
+            this.lblAcquirePP.TabIndex = 515;
+            this.lblAcquirePP.Text = "2.6";
+            this.lblAcquirePP.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.lblAcquirePP.Visible = false;
+            // 
+            // lblPureIntegral
+            // 
+            this.lblPureIntegral.Font = new System.Drawing.Font("Tahoma", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblPureIntegral.ForeColor = System.Drawing.Color.Black;
+            this.lblPureIntegral.Location = new System.Drawing.Point(5, 236);
+            this.lblPureIntegral.Name = "lblPureIntegral";
+            this.lblPureIntegral.Size = new System.Drawing.Size(50, 35);
+            this.lblPureIntegral.TabIndex = 350;
+            this.lblPureIntegral.Text = "20";
+            this.lblPureIntegral.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // tabStan
             // 
@@ -1477,7 +1503,7 @@
             this.label59.Name = "label59";
             this.label59.Size = new System.Drawing.Size(25, 16);
             this.label59.TabIndex = 544;
-            this.label59.Text = "1.0";
+            this.label59.Text = "1.5";
             this.label59.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
             // 
             // lblDistanceAdv
@@ -3214,32 +3240,6 @@
             this.btnSendSteerConfigPGN.TabIndex = 501;
             this.btnSendSteerConfigPGN.UseVisualStyleBackColor = false;
             this.btnSendSteerConfigPGN.Click += new System.EventHandler(this.btnSendSteerConfigPGN_Click);
-            // 
-            // lblAcquirePP
-            // 
-            this.lblAcquirePP.AutoSize = true;
-            this.lblAcquirePP.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblAcquirePP.ForeColor = System.Drawing.Color.Black;
-            this.lblAcquirePP.Location = new System.Drawing.Point(190, 159);
-            this.lblAcquirePP.Name = "lblAcquirePP";
-            this.lblAcquirePP.Size = new System.Drawing.Size(34, 19);
-            this.lblAcquirePP.TabIndex = 515;
-            this.lblAcquirePP.Text = "2.6";
-            this.lblAcquirePP.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.lblAcquirePP.Visible = false;
-            // 
-            // label16
-            // 
-            this.label16.AutoSize = true;
-            this.label16.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label16.ForeColor = System.Drawing.Color.Black;
-            this.label16.Location = new System.Drawing.Point(127, 159);
-            this.label16.Name = "label16";
-            this.label16.Size = new System.Drawing.Size(69, 19);
-            this.label16.TabIndex = 548;
-            this.label16.Text = "Acquire:";
-            this.label16.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.label16.Visible = false;
             // 
             // FormSteer
             // 

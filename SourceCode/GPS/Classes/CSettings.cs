@@ -288,6 +288,7 @@ namespace AgOpenGPS
                     Key.SetValue("Language", "en");
                     Key.SetValue("VehicleFileName", "Default Vehicle");
                     Key.SetValue("WorkingDirectory", "Default");
+                    Key.SetValue("ProfileName", "Default Profile");
                     Key.Close();
                 }
 
