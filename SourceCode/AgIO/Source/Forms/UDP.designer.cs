@@ -486,7 +486,7 @@ namespace AgIO
                         }
                     }
                     //GPS DATA
-                    else if (data[3] == 0xD6)
+                    else if (data[3] == 0xD6 && data.Length == 63)
                     {
                         longitude = BitConverter.ToDouble(data, 5);
 
@@ -536,8 +536,10 @@ namespace AgIO
 
                 }
             }
-            catch
+            catch (Exception ex) 
             {
+                Debug.Write(ex.Message);
+                Debug.Write(ex.StackTrace);
             }
         }
     }

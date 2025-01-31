@@ -448,11 +448,12 @@ namespace AgIO
                             {
                                 rList.Add(mess);
                                 i += (data[i + 1] << 6) + (data[i + 2])+5;
+                                /* System.IndexOutOfRangeException
                                 if (data[i + 1] != 211)
                                 {
                                     //rList.Clear();
                                     //break;
-                                }
+                                }*/
                             }
                             else
                             {
@@ -547,7 +548,7 @@ namespace AgIO
             Array.Copy(data, 0, outBuffer, 5, data.Length);
             int lenght = data.Length + 6;
             int crc = 0;
-            for (int i = 2; i + 1 < lenght-1; i++)
+            for (int i = 2; i < lenght-1; i++)
             {
                 crc += outBuffer[i];
             }
@@ -822,6 +823,6 @@ namespace AgIO
         $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,5,0*47
            0     1      2      3    4      5 6  7  8   9    10 11  12 13  14
                 Time      Lat       Lon     FixSatsOP Alt */
-        }
-    }
+                            }
+                        }
 }

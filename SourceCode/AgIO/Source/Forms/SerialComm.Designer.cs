@@ -5,13 +5,14 @@ using System;
 using System.Windows.Forms;
 using System.Linq;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace AgIO
 {
     public partial class FormLoop
     {
         //B5,62,7F,PGN_ID,Length
-        private int totalHeaderByteCount = 5;
+        private int totalHeaderByteCount = 6;
 
         public static string portNameGPS = "***";
         public  static int baudRateGPS = 4800;
@@ -77,11 +78,11 @@ namespace AgIO
         //public SerialPort spModule3 = new SerialPort(portNameModule3, baudRateModule3, Parity.None, 8, StopBits.One);
         
         //lists for parsing incoming bytes
-        private byte[] pgnSteerModule = new byte[128];
+        //private byte[] pgnSteerModule = new byte[128];
         private byte[] pgnMachineModule = new byte[128];
         //private byte[] pgnModule3 = new byte[262];
         private byte[] pgnIMU = new byte[128];
-
+        private byte[] ByteList = new byte[128];
         #region IMUSerialPort //--------------------------------------------------------------------
         private void ReceiveIMUPort(byte[] Data)
         {
@@ -402,12 +403,11 @@ namespace AgIO
         {
             if (spSteerModule.IsOpen)
             {
-                byte[] ByteList;
-                ByteList = pgnSteerModule;
+                //ByteList = pgnSteerModule;
 
                 try
                 {
-                    if (spSteerModule.BytesToRead > 100)
+                    if (spSteerModule.BytesToRead > 1024)
                     {
                         spSteerModule.DiscardInBuffer();
                         return;
@@ -415,9 +415,7 @@ namespace AgIO
 
                     byte a;
 
-                    int aas = spSteerModule.BytesToRead;
-
-                    for (int i = 0; i < aas; i++)
+                    while (spSteerModule.BytesToRead > 0)
                     {
                         //traffic.cntrIMUIn++;
 
@@ -456,11 +454,6 @@ namespace AgIO
                                 }
 
                             case 3: //PGN ID
-                                {
-                                    ByteList[ByteList[127]++] = a;
-                                    break;
-                                }
-
                             case 4: //Num of data bytes
                                 {
                                     ByteList[ByteList[127]++] = a;
@@ -472,16 +465,16 @@ namespace AgIO
                                     if (ByteList[127] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
+                                        ByteList[ByteList[127]++] = a;
                                         if ((ByteList[127]) < length)
                                         {
-                                            ByteList[ByteList[127]++] = a;
                                             break;
                                         }
                                         else
                                         {
                                             //crc
                                             int CK_A = 0;
-                                            for (int j = 2; j < length; j++)
+                                            for (int j = 2; j < length-1; j++)
                                             {
                                                 CK_A = CK_A + ByteList[j];
                                             }
@@ -489,14 +482,12 @@ namespace AgIO
                                             //if checksum matches finish and update main thread
                                             if (a == (byte)(CK_A))
                                             {
-                                                length++;
-                                                ByteList[ByteList[127]++] = (byte)CK_A;
                                                 BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
                                             ByteList[127] = 0;
-                                            return;
+                                            break;
                                         }
                                     }
 
@@ -505,9 +496,11 @@ namespace AgIO
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     ByteList[127] = 0;
+                    Debug.Write(ex.Message);
+                    Debug.Write(ex.StackTrace);
                 }
             }
         }
