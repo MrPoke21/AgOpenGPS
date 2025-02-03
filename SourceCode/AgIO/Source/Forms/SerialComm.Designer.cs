@@ -6,6 +6,9 @@ using System.Windows.Forms;
 using System.Linq;
 using System.Globalization;
 using System.Diagnostics;
+using System.IO;
+using System.Collections;
+using System.Text;
 
 namespace AgIO
 {
@@ -82,7 +85,8 @@ namespace AgIO
         private byte[] pgnMachineModule = new byte[128];
         //private byte[] pgnModule3 = new byte[262];
         private byte[] pgnIMU = new byte[128];
-        private byte[] ByteList = new byte[128];
+        private static byte[] ByteList = new byte[128];
+        private static object lockObject = new object();
         #region IMUSerialPort //--------------------------------------------------------------------
         private void ReceiveIMUPort(byte[] Data)
         {
@@ -401,106 +405,113 @@ namespace AgIO
 
         private void sp_DataReceivedSteerModule(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
-            if (spSteerModule.IsOpen)
-            {
-                //ByteList = pgnSteerModule;
-
-                try
+            lock (lockObject) {
+                if (spSteerModule.IsOpen)
                 {
-                    if (spSteerModule.BytesToRead > 1024)
+                    //ByteList = pgnSteerModule;
+
+                    try
                     {
-                        spSteerModule.DiscardInBuffer();
-                        return;
-                    }
-
-                    byte a;
-
-                    while (spSteerModule.BytesToRead > 0)
-                    {
-                        //traffic.cntrIMUIn++;
-
-                        a = (byte)spSteerModule.ReadByte();
-
-                        switch (ByteList[127])
+                        if (spSteerModule.BytesToRead > 1024)
                         {
-                            case 0: //find 0x80
-                                {
-                                    if (a == 128) ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
-                                    break;
-                                }
+                            spSteerModule.DiscardInBuffer();
+                            return;
+                        }
 
-                            case 1:  //find 0x81   
-                                {
-                                    if (a == 129) ByteList[ByteList[127]++] = a;
-                                    else
+                        byte a;
+
+                        while (spSteerModule.BytesToRead > 0)
+                        {
+                            a = (byte)spSteerModule.ReadByte();
+                            if (a != 128 && ByteList[127] == 0)
+                            {
+                                Debug.Write((char)a);
+                            }
+                            
+                            switch (ByteList[127])
+                            {
+                                case 0: //find 0x80
                                     {
-                                        if (a == 181)
-                                        {
-                                            ByteList[127] = 0;
-                                            ByteList[ByteList[127]++] = a;
-                                        }
+                                        if (a == 128) ByteList[ByteList[127]++] = a;
                                         else ByteList[127] = 0;
+                                        break;
                                     }
-                                    break;
-                                }
 
-                            case 2: //Source Address (7F)
-                                {
-                                    if (a < 128 && a > 120)
-                                        ByteList[ByteList[127]++] = a;
-                                    else ByteList[127] = 0;
-                                    break;
-                                }
-
-                            case 3: //PGN ID
-                            case 4: //Num of data bytes
-                                {
-                                    ByteList[ByteList[127]++] = a;
-                                    break;
-                                }
-
-                            default: //Data load and Checksum
-                                {
-                                    if (ByteList[127] > 4)
+                                case 1:  //find 0x81   
                                     {
-                                        int length = ByteList[4] + totalHeaderByteCount;
-                                        ByteList[ByteList[127]++] = a;
-                                        if ((ByteList[127]) < length)
-                                        {
-                                            break;
-                                        }
+                                        if (a == 129) ByteList[ByteList[127]++] = a;
                                         else
                                         {
-                                            //crc
-                                            int CK_A = 0;
-                                            for (int j = 2; j < length-1; j++)
+                                            if (a == 181)
                                             {
-                                                CK_A = CK_A + ByteList[j];
+                                                ByteList[127] = 0;
+                                                ByteList[ByteList[127]++] = a;
                                             }
-
-                                            //if checksum matches finish and update main thread
-                                            if (a == (byte)(CK_A))
-                                            {
-                                                BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(ByteList.Take(length).ToArray())));
-                                            }
-
-                                            //clear out the current pgn
-                                            ByteList[127] = 0;
-                                            break;
+                                            else ByteList[127] = 0;
                                         }
+                                        break;
                                     }
 
-                                    break;
-                                }
+                                case 2: //Source Address (7F)
+                                    {
+                                        if (a < 128 && a > 120)
+                                            ByteList[ByteList[127]++] = a;
+                                        else ByteList[127] = 0;
+                                        break;
+                                    }
+
+                                case 3: //PGN ID
+                                case 4: //Num of data bytes
+                                    {
+                                        ByteList[ByteList[127]++] = a;
+                                        break;
+                                    }
+
+                                default: //Data load and Checksum
+                                    {
+                                        if (ByteList[127] > 4)
+                                        {
+                                            int length = ByteList[4] + totalHeaderByteCount;
+                                            ByteList[ByteList[127]++] = a;
+                                            if ((ByteList[127]) < length)
+                                            {
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                //crc
+                                                int CK_A = 0;
+                                                for (int j = 2; j < length - 1; j++)
+                                                {
+                                                    CK_A = CK_A + ByteList[j];
+                                                }
+
+                                                //if checksum matches finish and update main thread
+                                                if (a == (byte)(CK_A))
+                                                {
+                                                    BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(ByteList.Take(length).ToArray())));
+                                                }
+                                                else
+                                                {
+                                                    Debug.WriteLine("Checksum error");
+                                                }
+                                                //clear out the current pgn
+                                                ByteList[127] = 0;
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    ByteList[127] = 0;
-                    Debug.Write(ex.Message);
-                    Debug.Write(ex.StackTrace);
+                    catch (Exception ex)
+                    {
+                        ByteList[127] = 0;
+                        Debug.Write(ex.Message);
+                        Debug.Write(ex.StackTrace);
+                    }
                 }
             }
         }

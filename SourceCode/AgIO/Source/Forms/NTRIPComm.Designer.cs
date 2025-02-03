@@ -539,6 +539,10 @@ namespace AgIO
 
         public void SendNTRIP(byte[] data)
         {
+            if (data.Length < 1)
+            {
+                return;
+            }
             //serial send out GPS port
             if (isSendToSerial)
             {
