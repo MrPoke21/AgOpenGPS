@@ -2,8 +2,10 @@
 using Microsoft.Win32;
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Pipes;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -25,6 +27,12 @@ namespace AgIO
 
             Log.EventWriter("Program Started: " + DateTime.Now.ToString("f", CultureInfo.CreateSpecificCulture(RegistrySettings.culture)));
             Log.EventWriter("AgIO Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
+
+
+            TextWriterTraceListener fileListener = new TextWriterTraceListener("debug_output.txt");
+            Debug.Listeners.Add(fileListener);
+            Debug.AutoFlush = true;
+
 
             //load the profile name and set profile directory
             RegistrySettings.Load();
