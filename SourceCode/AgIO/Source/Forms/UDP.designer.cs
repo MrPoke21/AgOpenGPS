@@ -488,6 +488,9 @@ namespace AgIO
                     //GPS DATA
                     else if (data[3] == 0xD6 && data.Length == 63)
                     {
+
+                        traffic.cntrGPSOut = data.Length;
+
                         longitude = BitConverter.ToDouble(data, 5);
 
                         latitude = BitConverter.ToDouble(data, 13);

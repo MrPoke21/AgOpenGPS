@@ -28,8 +28,13 @@ namespace AgIO
             Log.EventWriter("Program Started: " + DateTime.Now.ToString("f", CultureInfo.CreateSpecificCulture(RegistrySettings.culture)));
             Log.EventWriter("AgIO Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
 
+            string date = DateTime.Now.ToString("yyyy-MM-dd");
+            string logDirectory = "Logs";
+            Directory.CreateDirectory(logDirectory);
 
-            TextWriterTraceListener fileListener = new TextWriterTraceListener("debug_output.txt");
+            string logFilePath = Path.Combine(logDirectory, $"debug_output_{date}.txt");
+
+            TextWriterTraceListener fileListener = new TextWriterTraceListener(logFilePath);
             Debug.Listeners.Add(fileListener);
             Debug.AutoFlush = true;
 
