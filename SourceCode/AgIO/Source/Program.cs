@@ -1,6 +1,8 @@
 ﻿using AgLibrary.Logging;
 using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -28,6 +30,16 @@ namespace AgIO
 
                     Log.EventWriter("Program Started: " + DateTime.Now.ToString("f", CultureInfo.InvariantCulture));
                     Log.EventWriter("AgIO Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
+
+                    string date = DateTime.Now.ToString("yyyy-MM-dd");
+                    string logDirectory = "Logs";
+                    Directory.CreateDirectory(logDirectory);
+                    
+                    string logFilePath = Path.Combine(logDirectory, $"debug_output_{date}.txt");
+                    
+                    TextWriterTraceListener fileListener = new TextWriterTraceListener(logFilePath);
+                    Debug.Listeners.Add(fileListener);
+                    Debug.AutoFlush = true;
 
                     Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(RegistrySettings.culture);
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(RegistrySettings.culture);

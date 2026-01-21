@@ -34,22 +34,24 @@ namespace AgOpenGPS
         {
             if (data.Length > 4 && data[0] == 0x80 && data[1] == 0x81)
             {
-                int Length = Math.Max((data[4]) + 5, 5);
-                if (data.Length > Length)
+                int Length = Math.Max((data[4]) + 6, 5);
+                if (data.Length == Length)
                 {
                     byte CK_A = 0;
-                    for (int j = 2; j < Length; j++)
+                    for (int j = 2; j < Length - 1; j++)
                     {
                         CK_A += data[j];
                     }
 
-                    if (data[Length] != (byte)CK_A)
+                    if (data[Length - 1] != (byte)CK_A)
                     {
+                        Debug.WriteLine("CRC packet error!!");
                         return;
                     }
                 }
                 else
                 {
+                    Debug.WriteLine("Packet lenght error!!");
                     return;
                 }
 
@@ -130,30 +132,30 @@ namespace AgOpenGPS
                                 if (age != ushort.MaxValue)
                                     pn.age = age * 0.01;
 
-                                ushort imuHead = BitConverter.ToUInt16(data, 48);
-                                if (imuHead != ushort.MaxValue)
+                                float imuHead = BitConverter.ToSingle(data, 48);
+                                if (imuHead != float.MaxValue)
                                 {
                                     ahrs.imuHeading = imuHead;
-                                    ahrs.imuHeading *= 0.1;
                                 }
 
-                                short imuRol = BitConverter.ToInt16(data, 50);
-                                if (imuRol != short.MaxValue)
+                                float imuRol = BitConverter.ToSingle(data, 52);
+                                if (imuRol != float.MaxValue)
                                 {
                                     double rollK = imuRol;
-                                    if (ahrs.isRollInvert) rollK *= -0.1;
-                                    else rollK *= 0.1;
+                                    if (ahrs.isRollInvert) rollK *= -1f;
                                     rollK -= ahrs.rollZero;
-                                    ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
+                                    ahrs.imuRoll = rollK;
+
+                                    //:TODO Filtering? WTF?
                                 }
 
-                                short imuPich = BitConverter.ToInt16(data, 52);
-                                if (imuPich != short.MaxValue)
+                                float imuPich = BitConverter.ToSingle(data, 56);
+                                if (imuPich != float.MaxValue)
                                 {
                                     ahrs.imuPitch = imuPich;
                                 }
 
-                                short imuYaw = BitConverter.ToInt16(data, 54);
+                                short imuYaw = BitConverter.ToInt16(data, 60);
                                 if (imuYaw != short.MaxValue)
                                 {
                                     ahrs.imuYawRate = imuYaw;

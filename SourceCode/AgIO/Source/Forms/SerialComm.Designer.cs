@@ -6,13 +6,14 @@ using System.Windows.Forms;
 using System.Linq;
 using System.Globalization;
 using AgLibrary.Logging;
+using System.Diagnostics;
 
 namespace AgIO
 {
     public partial class FormLoop
     {
         //B5,62,7F,PGN_ID,Length
-        private int totalHeaderByteCount = 5;
+        private int totalHeaderByteCount = 6;
 
         public static string portNameGPS = "***";
         public static int baudRateGPS = 4800;
@@ -27,7 +28,7 @@ namespace AgIO
         public static int baudRateIMU = 38400;
 
         public static string portNameSteerModule = "***";
-        public static int baudRateSteerModule = 38400;
+        public static int baudRateSteerModule = 460800;
 
         public static string portNameMachineModule = "***";
         public static int baudRateMachineModule = 38400;
@@ -78,11 +79,13 @@ namespace AgIO
         //public SerialPort spModule3 = new SerialPort(portNameModule3, baudRateModule3, Parity.None, 8, StopBits.One);
 
         //lists for parsing incoming bytes
-        private byte[] pgnSteerModule = new byte[22];
-        private byte[] pgnMachineModule = new byte[22];
+        //private byte[] pgnSteerModule = new byte[128];
+        private byte[] pgnMachineModule = new byte[128];
         //private byte[] pgnModule3 = new byte[262];
-        private byte[] pgnIMU = new byte[22];
-
+        private byte[] pgnIMU = new byte[128];
+        private static byte[] byteSteer = new byte[1024];
+        private static int byteSteerState = 0;
+        private static object lockObject = new object();
         #region IMUSerialPort //--------------------------------------------------------------------
         private void ReceiveIMUPort(byte[] Data)
         {
@@ -157,7 +160,7 @@ namespace AgIO
                 try
                 {
                     spIMU.Close();
-                    byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 0xCC };
+                    byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 0xCC, 0x0D, 0x0A };
 
                     //tell AOG IMU is disconnected
                     SendToLoopBackMessageAOG(imuClose);
@@ -178,7 +181,7 @@ namespace AgIO
 
             else
             {
-                byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 2, 1, 0, 0xCC };
+                byte[] imuClose = new byte[] { 0x80, 0x81, 0x7C, 0xD4, 10, 1, 0, 0xCC, 0x0D, 0x0A };
 
                 //tell AOG IMU is disconnected
                 SendToLoopBackMessageAOG(imuClose);
@@ -212,26 +215,26 @@ namespace AgIO
                     {
                         a = (byte)spIMU.ReadByte();
 
-                        switch (ByteList[21])
+                        switch (ByteList[127])
                         {
                             case 0: //find 0x80
                                 {
-                                    if (a == 128) ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
+                                    if (a == 128) ByteList[ByteList[127]++] = a;
+                                    else ByteList[127] = 0;
                                     break;
                                 }
 
                             case 1:  //find 0x81   
                                 {
-                                    if (a == 129) ByteList[ByteList[21]++] = a;
+                                    if (a == 129) ByteList[ByteList[127]++] = a;
                                     else
                                     {
                                         if (a == 181)
                                         {
-                                            ByteList[21] = 0;
-                                            ByteList[ByteList[21]++] = a;
+                                            ByteList[127] = 0;
+                                            ByteList[ByteList[127]++] = a;
                                         }
-                                        else ByteList[21] = 0;
+                                        else ByteList[127] = 0;
                                     }
                                     break;
                                 }
@@ -239,31 +242,31 @@ namespace AgIO
                             case 2: //Source Address (7F)
                                 {
                                     if (a < 128 && a > 120)
-                                        ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
+                                        ByteList[ByteList[127]++] = a;
+                                    else ByteList[127] = 0;
                                     break;
                                 }
 
                             case 3: //PGN ID
                                 {
-                                    ByteList[ByteList[21]++] = a;
+                                    ByteList[ByteList[127]++] = a;
                                     break;
                                 }
 
                             case 4: //Num of data bytes
                                 {
-                                    ByteList[ByteList[21]++] = a;
+                                    ByteList[ByteList[127]++] = a;
                                     break;
                                 }
 
                             default: //Data load and Checksum
                                 {
-                                    if (ByteList[21] > 4)
+                                    if (ByteList[127] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[21]) < length)
+                                        if ((ByteList[127]) < length)
                                         {
-                                            ByteList[ByteList[21]++] = a;
+                                            ByteList[ByteList[127]++] = a;
                                             break;
                                         }
                                         else
@@ -279,12 +282,12 @@ namespace AgIO
                                             if (a == (byte)(CK_A))
                                             {
                                                 length++;
-                                                ByteList[ByteList[21]++] = (byte)CK_A;
+                                                ByteList[ByteList[127]++] = (byte)CK_A;
                                                 BeginInvoke((MethodInvoker)(() => ReceiveIMUPort(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
-                                            ByteList[21] = 0;
+                                            ByteList[127] = 0;
                                             return;
                                         }
                                     }
@@ -296,7 +299,7 @@ namespace AgIO
                 }
                 catch
                 {
-                    ByteList[21] = 0;
+                    ByteList[127] = 0;
                 }
             }
         }
@@ -318,12 +321,17 @@ namespace AgIO
                 try
                 {
                     spSteerModule.Write(items, 0, numItems);
+                    spSteerModule.BaseStream.FlushAsync();
                 }
                 catch (Exception ex)
                 {
                     Log.EventWriter("Catch - > Serial Steer module disconnect: " + ex.ToString());
                     CloseSteerModulePort();
                 }
+            }
+            else
+            {
+                OpenSteerModulePort();
             }
         }
 
@@ -341,6 +349,7 @@ namespace AgIO
 
             try
             {
+                System.Threading.Thread.Sleep(1000); // 500 was not enough
                 spSteerModule.Open();
                 //short delay for the use of mega2560, it is working in debugmode with breakpoint
                 System.Threading.Thread.Sleep(1000); // 500 was not enough
@@ -350,7 +359,7 @@ namespace AgIO
             {
                 Log.EventWriter("Opening Machine Port" + e.ToString());
 
-                MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
+                //MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
 
 
                 Properties.Settings.Default.setPort_wasSteerModuleConnected = false;
@@ -371,7 +380,7 @@ namespace AgIO
             }
         }
 
-        //close the machine port
+        //close the Steer port
         public void CloseSteerModulePort()
         {
             if (spSteerModule.IsOpen)
@@ -396,114 +405,114 @@ namespace AgIO
 
         private void sp_DataReceivedSteerModule(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
-            if (spSteerModule.IsOpen)
+            lock (lockObject)
             {
-                byte[] ByteList;
-                ByteList = pgnSteerModule;
-
-                try
+                if (spSteerModule.IsOpen)
                 {
-                    if (spSteerModule.BytesToRead > 100)
+                    //ByteList = pgnSteerModule;
+
+                    try
                     {
-                        spSteerModule.DiscardInBuffer();
-                        return;
-                    }
-
-                    byte a;
-
-                    int aas = spSteerModule.BytesToRead;
-
-                    for (int i = 0; i < aas; i++)
-                    {
-                        //traffic.cntrIMUIn++;
-
-                        a = (byte)spSteerModule.ReadByte();
-
-                        switch (ByteList[21])
+                        if (spSteerModule.BytesToRead > 8192)
                         {
-                            case 0: //find 0x80
-                                {
-                                    if (a == 128) ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
-                                    break;
-                                }
+                            spSteerModule.DiscardInBuffer();
+                            return;
+                        }
 
-                            case 1:  //find 0x81   
-                                {
-                                    if (a == 129) ByteList[ByteList[21]++] = a;
-                                    else
+                        byte a;
+
+                        while (spSteerModule.BytesToRead > 0)
+                        {
+                            a = (byte)spSteerModule.ReadByte();
+                            if (a != 128 && byteSteerState == 0)
+                            {
+                                Debug.Write((char)a);
+                            }
+
+                            switch (byteSteerState)
+                            {
+                                case 0: //find 0x80
                                     {
-                                        if (a == 181)
-                                        {
-                                            ByteList[21] = 0;
-                                            ByteList[ByteList[21]++] = a;
-                                        }
-                                        else ByteList[21] = 0;
+                                        if (a == 128) byteSteer[byteSteerState++] = a;
+                                        else byteSteerState = 0;
+                                        break;
                                     }
-                                    break;
-                                }
 
-                            case 2: //Source Address (7F)
-                                {
-                                    if (a < 128 && a > 120)
-                                        ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
-                                    break;
-                                }
-
-                            case 3: //PGN ID
-                                {
-                                    ByteList[ByteList[21]++] = a;
-                                    break;
-                                }
-
-                            case 4: //Num of data bytes
-                                {
-                                    ByteList[ByteList[21]++] = a;
-                                    break;
-                                }
-
-                            default: //Data load and Checksum
-                                {
-                                    if (ByteList[21] > 4)
+                                case 1:  //find 0x81
                                     {
-                                        int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[21]) < length)
-                                        {
-                                            ByteList[ByteList[21]++] = a;
-                                            break;
-                                        }
+                                        if (a == 129) byteSteer[byteSteerState++] = a;
                                         else
                                         {
-                                            //crc
-                                            int CK_A = 0;
-                                            for (int j = 2; j < length; j++)
+                                            if (a == 181)
                                             {
-                                                CK_A = CK_A + ByteList[j];
+                                                byteSteerState = 0;
+                                                byteSteer[byteSteerState++] = a;
                                             }
-
-                                            //if checksum matches finish and update main thread
-                                            if (a == (byte)(CK_A))
-                                            {
-                                                length++;
-                                                ByteList[ByteList[21]++] = (byte)CK_A;
-                                                BeginInvoke((MethodInvoker)(() => ReceiveSteerModulePort(ByteList.Take(length).ToArray())));
-                                            }
-
-                                            //clear out the current pgn
-                                            ByteList[21] = 0;
-                                            return;
+                                            else byteSteerState = 0;
                                         }
+                                        break;
                                     }
 
-                                    break;
-                                }
+                                case 2: //Source Address (7F)
+                                    {
+                                        if (a < 128 && a > 120)
+                                            byteSteer[byteSteerState++] = a;
+                                        else byteSteerState = 0;
+                                        break;
+                                    }
+
+                                case 3: //PGN ID
+                                case 4: //Num of data bytes
+                                    {
+                                        byteSteer[byteSteerState++] = a;
+                                        break;
+                                    }
+
+                                default: //Data load and Checksum
+                                    {
+                                        if (byteSteerState > 4)
+                                        {
+                                            int length = byteSteer[4] + totalHeaderByteCount;
+                                            byteSteer[byteSteerState++] = a;
+                                            if ((byteSteerState) < length)
+                                            {
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                //crc
+                                                int CK_A = 0;
+                                                for (int j = 2; j < length - 1; j++)
+                                                {
+                                                    CK_A = CK_A + byteSteer[j];
+                                                }
+
+                                                //if checksum matches finish and update main thread
+                                                if (a == (byte)(CK_A))
+                                                {
+                                                    BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(byteSteer.Take(length).ToArray())));
+                                                }
+                                                else
+                                                {
+                                                    Debug.WriteLine("Checksum error");
+                                                }
+                                                //clear out the current pgn
+                                                byteSteerState = 0;
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                            }
                         }
                     }
-                }
-                catch (Exception)
-                {
-                    ByteList[21] = 0;
+                    catch (Exception ex)
+                    {
+                        byteSteerState = 0;
+                        Debug.Write(ex.Message);
+                        Debug.Write(ex.StackTrace);
+                    }
                 }
             }
         }
@@ -633,26 +642,26 @@ namespace AgIO
 
                         a = (byte)spMachineModule.ReadByte();
 
-                        switch (ByteList[21])
+                        switch (ByteList[127])
                         {
                             case 0: //find 0x80
                                 {
-                                    if (a == 128) ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
+                                    if (a == 128) ByteList[ByteList[127]++] = a;
+                                    else ByteList[127] = 0;
                                     break;
                                 }
 
                             case 1:  //find 0x81   
                                 {
-                                    if (a == 129) ByteList[ByteList[21]++] = a;
+                                    if (a == 129) ByteList[ByteList[127]++] = a;
                                     else
                                     {
                                         if (a == 181)
                                         {
-                                            ByteList[21] = 0;
-                                            ByteList[ByteList[21]++] = a;
+                                            ByteList[127] = 0;
+                                            ByteList[ByteList[127]++] = a;
                                         }
-                                        else ByteList[21] = 0;
+                                        else ByteList[127] = 0;
                                     }
                                     break;
                                 }
@@ -660,31 +669,31 @@ namespace AgIO
                             case 2: //Source Address (7F)
                                 {
                                     if (a < 128 && a > 120)
-                                        ByteList[ByteList[21]++] = a;
-                                    else ByteList[21] = 0;
+                                        ByteList[ByteList[127]++] = a;
+                                    else ByteList[127] = 0;
                                     break;
                                 }
 
                             case 3: //PGN ID
                                 {
-                                    ByteList[ByteList[21]++] = a;
+                                    ByteList[ByteList[127]++] = a;
                                     break;
                                 }
 
                             case 4: //Num of data bytes
                                 {
-                                    ByteList[ByteList[21]++] = a;
+                                    ByteList[ByteList[127]++] = a;
                                     break;
                                 }
 
                             default: //Data load and Checksum
                                 {
-                                    if (ByteList[21] > 4)
+                                    if (ByteList[127] > 4)
                                     {
                                         int length = ByteList[4] + totalHeaderByteCount;
-                                        if ((ByteList[21]) < length)
+                                        if ((ByteList[127]) < length)
                                         {
-                                            ByteList[ByteList[21]++] = a;
+                                            ByteList[ByteList[127]++] = a;
                                             break;
                                         }
                                         else
@@ -699,13 +708,13 @@ namespace AgIO
                                             //if checksum matches finish and update main thread
                                             if (a == (byte)(CK_A))
                                             {
-                                                ByteList[ByteList[21]++] = (byte)CK_A;
+                                                ByteList[ByteList[127]++] = (byte)CK_A;
                                                 length++;
                                                 BeginInvoke((MethodInvoker)(() => ReceiveMachineModulePort(ByteList.Take(length).ToArray())));
                                             }
 
                                             //clear out the current pgn
-                                            ByteList[21] = 0;
+                                            ByteList[127] = 0;
                                             return;
                                         }
                                     }
@@ -717,7 +726,7 @@ namespace AgIO
                 }
                 catch (Exception)
                 {
-                    ByteList[21] = 0;
+                    ByteList[127] = 0;
                 }
             }
         }
@@ -843,26 +852,26 @@ namespace AgIO
 
         //                a = (byte)spModule3.ReadByte();
 
-        //                switch (ByteList[21])
+        //                switch (ByteList[127])
         //                {
         //                    case 0: //find 0x80
         //                        {
-        //                            if (a == 128) ByteList[ByteList[21]++] = a;
-        //                            else ByteList[21] = 0;
+        //                            if (a == 128) ByteList[ByteList[127]++] = a;
+        //                            else ByteList[127] = 0;
         //                            break;
         //                        }
 
         //                    case 1:  //find 0x81   
         //                        {
-        //                            if (a == 129) ByteList[ByteList[21]++] = a;
+        //                            if (a == 129) ByteList[ByteList[127]++] = a;
         //                            else
         //                            {
         //                                if (a == 181)
         //                                {
-        //                                    ByteList[21] = 0;
-        //                                    ByteList[ByteList[21]++] = a;
+        //                                    ByteList[127] = 0;
+        //                                    ByteList[ByteList[127]++] = a;
         //                                }
-        //                                else ByteList[21] = 0;
+        //                                else ByteList[127] = 0;
         //                            }
         //                            break;
         //                        }
@@ -870,31 +879,31 @@ namespace AgIO
         //                    case 2: //Source Address (7F)
         //                        {
         //                            if (a < 128 && a > 120)
-        //                                ByteList[ByteList[21]++] = a;
-        //                            else ByteList[21] = 0;
+        //                                ByteList[ByteList[127]++] = a;
+        //                            else ByteList[127] = 0;
         //                            break;
         //                        }
 
         //                    case 3: //PGN ID
         //                        {
-        //                            ByteList[ByteList[21]++] = a;
+        //                            ByteList[ByteList[127]++] = a;
         //                            break;
         //                        }
 
         //                    case 4: //Num of data bytes
         //                        {
-        //                            ByteList[ByteList[21]++] = a;
+        //                            ByteList[ByteList[127]++] = a;
         //                            break;
         //                        }
 
         //                    default: //Data load and Checksum
         //                        {
-        //                            if (ByteList[21] > 4)
+        //                            if (ByteList[127] > 4)
         //                            {
         //                                int length = ByteList[4] + totalHeaderByteCount;
-        //                                if ((ByteList[21]) < length)
+        //                                if ((ByteList[127]) < length)
         //                                {
-        //                                    ByteList[ByteList[21]++] = a;
+        //                                    ByteList[ByteList[127]++] = a;
         //                                    break;
         //                                }
         //                                else
@@ -909,12 +918,12 @@ namespace AgIO
         //                                    //if checksum matches finish and update main thread
         //                                    if (a == (byte)(CK_A))
         //                                    {
-        //                                        ByteList[ByteList[21]++] = (byte)CK_A;
+        //                                        ByteList[ByteList[127]++] = (byte)CK_A;
         //                                        BeginInvoke((MethodInvoker)(() => ReceiveModule3Port(ByteList.Take(length).ToArray())));
         //                                    }
 
         //                                    //clear out the current pgn
-        //                                    ByteList[21] = 0;
+        //                                    ByteList[127] = 0;
         //                                    return;
         //                                }
         //                            }
@@ -926,7 +935,7 @@ namespace AgIO
         //        }
         //        catch (Exception)
         //        {
-        //            ByteList[21] = 0;
+        //            ByteList[127] = 0;
         //        }
         //    }
         //}

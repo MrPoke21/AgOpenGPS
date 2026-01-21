@@ -21,6 +21,7 @@ namespace AgIO
 
         private Socket clientSocket;                      // Server connection
         private byte[] casterRecBuffer = new byte[2800];    // Recieved data buffer
+        private byte[] outBuffer = new byte[2800];    // Recieved data buffer
 
         //Send GGA back timer
         Timer tmr;
@@ -168,6 +169,11 @@ namespace AgIO
             isNTRIP_RequiredOn = Properties.Settings.Default.setNTRIP_isOn;
             isRadio_RequiredOn = Properties.Settings.Default.setRadio_isOn;
             isSerialPass_RequiredOn = Properties.Settings.Default.setPass_isOn;
+
+            outBuffer[0] = 0x80;
+            outBuffer[1] = 0x81;
+            outBuffer[2] = 127;
+            outBuffer[3] = 215;
 
             if (isRadio_RequiredOn || isSerialPass_RequiredOn)
             {
@@ -533,11 +539,25 @@ namespace AgIO
 
         public void SendNTRIP(byte[] data)
         {
+            if (data.Length < 1)
+            {
+                return;
+            }
             //serial send out GPS port
             if (isSendToSerial)
             {
                 SendGPSPort(data);
             }
+            outBuffer[4] = (byte)data.Length;
+            Array.Copy(data, 0, outBuffer, 5, data.Length);
+            int lenght = data.Length + 6;
+            int crc = 0;
+            for (int i = 2; i < lenght - 1; i++)
+            {
+                crc += outBuffer[i];
+            }
+            outBuffer[lenght - 1] = (byte)crc;
+            SendSteerModulePort(outBuffer, lenght);
 
             //send out UDP Port
             if (isSendToUDP)

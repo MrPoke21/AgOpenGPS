@@ -758,8 +758,7 @@
             this.comboboxPacketSize.FormattingEnabled = true;
             this.comboboxPacketSize.Items.AddRange(new object[] {
             "64",
-            "128",
-            "256"});
+            "128"});
             this.comboboxPacketSize.Location = new System.Drawing.Point(68, 345);
             this.comboboxPacketSize.Name = "comboboxPacketSize";
             this.comboboxPacketSize.Size = new System.Drawing.Size(129, 47);
