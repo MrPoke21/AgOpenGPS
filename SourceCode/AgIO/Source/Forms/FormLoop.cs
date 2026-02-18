@@ -298,22 +298,43 @@ namespace AgIO
 
             Settings.Default.Save();
 
+            // Properly cleanup loopback socket
             if (loopBackSocket != null)
             {
                 try
                 {
                     loopBackSocket.Shutdown(SocketShutdown.Both);
+                    loopBackSocket.Close();
+                    loopBackSocket.Dispose();
                 }
-                finally { loopBackSocket.Close(); }
+                catch (Exception ex)
+                {
+                    Log.EventWriter("Loopback socket cleanup error: " + ex.Message);
+                }
+                finally
+                {
+                    loopBackSocket = null;
+                }
             }
 
+            // Properly cleanup UDP socket
             if (UDPSocket != null)
             {
                 try
                 {
+                    isUDPNetworkConnected = false;
                     UDPSocket.Shutdown(SocketShutdown.Both);
+                    UDPSocket.Close();
+                    UDPSocket.Dispose();
                 }
-                finally { UDPSocket.Close(); }
+                catch (Exception ex)
+                {
+                    Log.EventWriter("UDP socket cleanup error: " + ex.Message);
+                }
+                finally
+                {
+                    UDPSocket = null;
+                }
             }
 
             Process[] processName = Process.GetProcessesByName("GPS_Out");
@@ -445,7 +466,12 @@ namespace AgIO
 
             //send a hello to modules
             SendUDPMessage(helloFromAgIO, epModule);
-            SendSteerModulePort(helloFromAgIO, helloFromAgIO.Length);
+
+            // Only send to serial if UDP is not connected (to avoid UI thread blocking)
+            if (!isUDPNetworkConnected && spSteerModule.IsOpen)
+            {
+                SendSteerModulePort(helloFromAgIO, helloFromAgIO.Length);
+            }
 
             //if (isLogNMEA)
             //{
@@ -529,6 +555,7 @@ namespace AgIO
 
                 #region Serial update
 
+                // Auto-reconnect logic for all serial ports
                 if (wasIMUConnectedLastRun)
                 {
                     if (!spIMU.IsOpen)
@@ -537,8 +564,22 @@ namespace AgIO
 
                         //tell AOG IMU is disconnected
                         SendToLoopBackMessageAOG(imuClose);
-                        wasIMUConnectedLastRun = false;
                         lblIMUComm.Text = "";
+
+                        // Try to reconnect
+                        try
+                        {
+                            OpenIMUPort();
+                            if (spIMU.IsOpen)
+                            {
+                                Log.EventWriter("IMU Port auto-reconnected: " + portNameIMU);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.EventWriter("IMU auto-reconnect failed: " + ex.Message);
+                            wasIMUConnectedLastRun = false;
+                        }
                     }
                 }
 
@@ -546,8 +587,22 @@ namespace AgIO
                 {
                     if (!spGPS.IsOpen)
                     {
-                        wasGPSConnectedLastRun = false;
                         lblGPS1Comm.Text = "";
+
+                        // Try to reconnect
+                        try
+                        {
+                            OpenGPSPort();
+                            if (spGPS.IsOpen)
+                            {
+                                Log.EventWriter("GPS Port auto-reconnected: " + portNameGPS);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.EventWriter("GPS auto-reconnect failed: " + ex.Message);
+                            wasGPSConnectedLastRun = false;
+                        }
                     }
                 }
 
@@ -555,8 +610,22 @@ namespace AgIO
                 {
                     if (!spSteerModule.IsOpen)
                     {
-                        wasSteerModuleConnectedLastRun = false;
                         lblMod1Comm.Text = "";
+
+                        // Try to reconnect
+                        try
+                        {
+                            OpenSteerModulePort();
+                            if (spSteerModule.IsOpen)
+                            {
+                                Log.EventWriter("Steer Module Port auto-reconnected: " + portNameSteerModule);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.EventWriter("Steer Module auto-reconnect failed: " + ex.Message);
+                            wasSteerModuleConnectedLastRun = false;
+                        }
                     }
                 }
 
@@ -564,8 +633,43 @@ namespace AgIO
                 {
                     if (!spMachineModule.IsOpen)
                     {
-                        wasMachineModuleConnectedLastRun = false;
                         lblMod2Comm.Text = "";
+
+                        // Try to reconnect
+                        try
+                        {
+                            OpenMachineModulePort();
+                            if (spMachineModule.IsOpen)
+                            {
+                                Log.EventWriter("Machine Module Port auto-reconnected: " + portNameMachineModule);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.EventWriter("Machine Module auto-reconnect failed: " + ex.Message);
+                            wasMachineModuleConnectedLastRun = false;
+                        }
+                    }
+                }
+
+                if (wasRtcmConnectedLastRun)
+                {
+                    if (!spRtcm.IsOpen)
+                    {
+                        // Try to reconnect
+                        try
+                        {
+                            OpenRtcmPort();
+                            if (spRtcm.IsOpen)
+                            {
+                                Log.EventWriter("RTCM Port auto-reconnected: " + portNameRtcm);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.EventWriter("RTCM auto-reconnect failed: " + ex.Message);
+                            wasRtcmConnectedLastRun = false;
+                        }
                     }
                 }
 

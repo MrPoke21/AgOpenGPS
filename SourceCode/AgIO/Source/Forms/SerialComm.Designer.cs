@@ -127,19 +127,16 @@ namespace AgIO
             {
                 Log.EventWriter("No Arduino Port, IMU Port Exc: " + ex.ToString());
 
-                MessageBox.Show(ex.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
-
-
+                // MessageBox removed for auto-reconnect - only log the error
                 Properties.Settings.Default.setPort_wasIMUConnected = false;
                 Properties.Settings.Default.Save();
                 wasIMUConnectedLastRun = false;
+                throw; // Re-throw to be caught by TenSecondLoop
             }
 
             if (spIMU.IsOpen)
             {
-                //short delay for the use of mega2560, it is working in debugmode with breakpoint
-                System.Threading.Thread.Sleep(500); // 500 was not enough
-
+                // Removed blocking Thread.Sleep(500) - let the port stabilize asynchronously
                 spIMU.DiscardOutBuffer();
                 spIMU.DiscardInBuffer();
 
@@ -329,10 +326,8 @@ namespace AgIO
                     CloseSteerModulePort();
                 }
             }
-            else
-            {
-                OpenSteerModulePort();
-            }
+            // Removed automatic OpenSteerModulePort() call to prevent infinite loop
+            // Reconnection will be handled by TenSecondLoop
         }
 
         //open the Arduino serial port
@@ -349,11 +344,8 @@ namespace AgIO
 
             try
             {
-                System.Threading.Thread.Sleep(1000); // 500 was not enough
+                // Removed blocking Thread.Sleep() calls - let the port open asynchronously
                 spSteerModule.Open();
-                //short delay for the use of mega2560, it is working in debugmode with breakpoint
-                System.Threading.Thread.Sleep(1000); // 500 was not enough
-
             }
             catch (Exception e)
             {
@@ -407,112 +399,133 @@ namespace AgIO
         {
             lock (lockObject)
             {
-                if (spSteerModule.IsOpen)
+                if (!spSteerModule.IsOpen) return;
+
+                try
                 {
-                    //ByteList = pgnSteerModule;
+                    int bytesToRead = spSteerModule.BytesToRead;
 
-                    try
+                    // Discard buffer if too much data accumulated (overflow protection)
+                    if (bytesToRead > 8192)
                     {
-                        if (spSteerModule.BytesToRead > 8192)
+                        spSteerModule.DiscardInBuffer();
+                        byteSteerState = 0; // Reset state machine
+                        Log.EventWriter("Steer Module: Buffer overflow, discarded");
+                        return;
+                    }
+
+                    byte a;
+
+                    while (spSteerModule.BytesToRead > 0)
+                    {
+                        a = (byte)spSteerModule.ReadByte();
+
+                        // Debug output only for non-header bytes in idle state (reduced logging)
+                        #if DEBUG
+                        if (a != 128 && byteSteerState == 0 && a >= 32 && a < 127)
                         {
-                            spSteerModule.DiscardInBuffer();
-                            return;
+                            Debug.Write((char)a); // Only printable ASCII
                         }
+                        #endif
 
-                        byte a;
-
-                        while (spSteerModule.BytesToRead > 0)
+                        switch (byteSteerState)
                         {
-                            a = (byte)spSteerModule.ReadByte();
-                            if (a != 128 && byteSteerState == 0)
-                            {
-                                Debug.Write((char)a);
-                            }
+                            case 0: //find 0x80
+                                {
+                                    if (a == 128) byteSteer[byteSteerState++] = a;
+                                    else byteSteerState = 0;
+                                    break;
+                                }
 
-                            switch (byteSteerState)
-                            {
-                                case 0: //find 0x80
+                            case 1:  //find 0x81
+                                {
+                                    if (a == 129) byteSteer[byteSteerState++] = a;
+                                    else
                                     {
-                                        if (a == 128) byteSteer[byteSteerState++] = a;
+                                        if (a == 181) // Alternative header byte
+                                        {
+                                            byteSteerState = 0;
+                                            byteSteer[byteSteerState++] = a;
+                                        }
                                         else byteSteerState = 0;
-                                        break;
                                     }
+                                    break;
+                                }
 
-                                case 1:  //find 0x81
+                            case 2: //Source Address (7F)
+                                {
+                                    if (a < 128 && a > 120)
+                                        byteSteer[byteSteerState++] = a;
+                                    else byteSteerState = 0;
+                                    break;
+                                }
+
+                            case 3: //PGN ID
+                            case 4: //Num of data bytes
+                                {
+                                    byteSteer[byteSteerState++] = a;
+                                    break;
+                                }
+
+                            default: //Data load and Checksum
+                                {
+                                    if (byteSteerState > 4)
                                     {
-                                        if (a == 129) byteSteer[byteSteerState++] = a;
+                                        int length = byteSteer[4] + totalHeaderByteCount;
+
+                                        // Buffer overflow protection
+                                        if (length > 1024 || byteSteerState >= 1024)
+                                        {
+                                            Log.EventWriter("Steer Module: Invalid packet length or state overflow");
+                                            byteSteerState = 0;
+                                            break;
+                                        }
+
+                                        byteSteer[byteSteerState++] = a;
+
+                                        if ((byteSteerState) < length)
+                                        {
+                                            break;
+                                        }
                                         else
                                         {
-                                            if (a == 181)
+                                            //crc calculation
+                                            int CK_A = 0;
+                                            for (int j = 2; j < length - 1; j++)
                                             {
-                                                byteSteerState = 0;
-                                                byteSteer[byteSteerState++] = a;
+                                                CK_A += byteSteer[j]; // Optimized: += instead of = CK_A +
                                             }
-                                            else byteSteerState = 0;
-                                        }
-                                        break;
-                                    }
 
-                                case 2: //Source Address (7F)
-                                    {
-                                        if (a < 128 && a > 120)
-                                            byteSteer[byteSteerState++] = a;
-                                        else byteSteerState = 0;
-                                        break;
-                                    }
-
-                                case 3: //PGN ID
-                                case 4: //Num of data bytes
-                                    {
-                                        byteSteer[byteSteerState++] = a;
-                                        break;
-                                    }
-
-                                default: //Data load and Checksum
-                                    {
-                                        if (byteSteerState > 4)
-                                        {
-                                            int length = byteSteer[4] + totalHeaderByteCount;
-                                            byteSteer[byteSteerState++] = a;
-                                            if ((byteSteerState) < length)
+                                            //if checksum matches, process the packet
+                                            if (a == (byte)(CK_A))
                                             {
-                                                break;
+                                                byte[] packet = new byte[length];
+                                                Array.Copy(byteSteer, packet, length);
+
+                                                // Process using unified UDP data processor
+                                                BeginInvoke((MethodInvoker)(() => ProcessReceivedUDPData(packet)));
                                             }
                                             else
                                             {
-                                                //crc
-                                                int CK_A = 0;
-                                                for (int j = 2; j < length - 1; j++)
-                                                {
-                                                    CK_A = CK_A + byteSteer[j];
-                                                }
-
-                                                //if checksum matches finish and update main thread
-                                                if (a == (byte)(CK_A))
-                                                {
-                                                    BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(byteSteer.Take(length).ToArray())));
-                                                }
-                                                else
-                                                {
-                                                    Debug.WriteLine("Checksum error");
-                                                }
-                                                //clear out the current pgn
-                                                byteSteerState = 0;
-                                                break;
+                                                Debug.WriteLine($"Steer Module: Checksum error (Expected: {(byte)CK_A}, Got: {a})");
                                             }
-                                        }
 
-                                        break;
+                                            //clear out the current pgn
+                                            byteSteerState = 0;
+                                            break;
+                                        }
                                     }
-                            }
+
+                                    break;
+                                }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        byteSteerState = 0;
-                        Debug.Write(ex.Message);
-                        Debug.Write(ex.StackTrace);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    byteSteerState = 0;
+                    Log.EventWriter("Steer Module DataReceived Error: " + ex.Message);
+                    Debug.WriteLine("Steer Module Exception: " + ex.ToString());
                 }
             }
         }
@@ -565,19 +578,16 @@ namespace AgIO
             try
             {
                 spMachineModule.Open();
-                //short delay for the use of mega2560, it is working in debugmode with breakpoint
-                System.Threading.Thread.Sleep(1000); // 500 was not enough
-
+                // Removed blocking Thread.Sleep(1000) - let the port open asynchronously
             }
             catch (Exception e)
             {
                 Log.EventWriter("Opening Machine Port: " + e.ToString());
 
-                MessageBox.Show(e.Message + "\n\r" + "\n\r" + "Go to Settings -> COM Ports to Fix", "No Arduino Port Active");
-
-
+                // MessageBox removed for auto-reconnect - only log the error
                 Properties.Settings.Default.setPort_wasMachineModuleConnected = false;
                 Properties.Settings.Default.Save();
+                throw; // Re-throw to be caught by TenSecondLoop
             }
 
             if (spMachineModule.IsOpen)

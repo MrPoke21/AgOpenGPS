@@ -31,15 +31,31 @@ namespace AgIO
                     Log.EventWriter("Program Started: " + DateTime.Now.ToString("f", CultureInfo.InvariantCulture));
                     Log.EventWriter("AgIO Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
 
+                    // Setup Debug trace logging to file
                     string date = DateTime.Now.ToString("yyyy-MM-dd");
-                    string logDirectory = "Logs";
+                    string baseDirectory = AppDomain.CurrentDomain.BaseDirectory; // Exe directory
+                    string logDirectory = Path.Combine(baseDirectory, "Logs");
                     Directory.CreateDirectory(logDirectory);
-                    
+
                     string logFilePath = Path.Combine(logDirectory, $"debug_output_{date}.txt");
-                    
+
                     TextWriterTraceListener fileListener = new TextWriterTraceListener(logFilePath);
+                    fileListener.WriteLine("=== AgIO Debug Log Started: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ===");
+                    fileListener.Flush(); // Ensure file is created immediately
+
                     Debug.Listeners.Add(fileListener);
                     Debug.AutoFlush = true;
+
+                    Log.EventWriter("Debug log file created: " + logFilePath);
+
+                    // Cleanup handler for proper file closing
+                    Application.ApplicationExit += (s, e) =>
+                    {
+                        fileListener?.WriteLine("=== AgIO Debug Log Ended: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ===");
+                        fileListener?.Flush();
+                        fileListener?.Close();
+                        fileListener?.Dispose();
+                    };
 
                     Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(RegistrySettings.culture);
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(RegistrySettings.culture);
