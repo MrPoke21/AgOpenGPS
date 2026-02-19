@@ -415,18 +415,14 @@ namespace AgIO
                     }
 
                     byte a;
+                    var rxDebug = new System.Text.StringBuilder();
 
                     while (spSteerModule.BytesToRead > 0)
                     {
                         a = (byte)spSteerModule.ReadByte();
 
-                        // Debug output only for non-header bytes in idle state (reduced logging)
-                        #if DEBUG
-                        if (a != 128 && byteSteerState == 0 && a >= 32 && a < 127)
-                        {
-                            Debug.Write((char)a); // Only printable ASCII
-                        }
-                        #endif
+                        if (byteSteerState == 0 && a != 128)
+                            rxDebug.Append((char)a);
 
                         switch (byteSteerState)
                         {
@@ -518,6 +514,16 @@ namespace AgIO
 
                                     break;
                                 }
+                        }
+                    }
+
+                    if (rxDebug.Length > 0)
+                    {
+                        foreach (string line in rxDebug.ToString().Split('\n'))
+                        {
+                            string trimmed = line.TrimEnd('\r');
+                            if (trimmed.Length > 0)
+                                Debug.WriteLine("Steer RX: " + trimmed);
                         }
                     }
                 }
