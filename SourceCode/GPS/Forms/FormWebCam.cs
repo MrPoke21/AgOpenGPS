@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using Accord.Video.DirectShow;
+using AgLibrary.Logging;
 
 namespace AgOpenGPS
 {
@@ -15,16 +16,31 @@ namespace AgOpenGPS
 
         private void FormWebCam_Load(object sender, EventArgs e)
         {
-            _videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-
-            foreach (var videoDevice in _videoDevices)
+            try
             {
-                deviceComboBox.Items.Add(videoDevice.Name);
+                _videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+
+                foreach (var videoDevice in _videoDevices)
+                {
+                    deviceComboBox.Items.Add(videoDevice.Name);
+                }
+
+                if (deviceComboBox.Items.Count > 0)
+                {
+                    deviceComboBox.SelectedItem = deviceComboBox.Items[0];
+                }
             }
-
-            if (deviceComboBox.Items.Count > 0)
+            catch (Exception ex)
             {
-                deviceComboBox.SelectedItem = deviceComboBox.Items[0];
+                Log.EventWriter($"DirectShow video device enumeration failed: {ex}");
+                MessageBox.Show(
+                    "Failed to enumerate video devices. This may be due to:\n\n" +
+                    "• Missing or corrupted video capture drivers\n" +
+                    "• DirectShow filter issues\n\n" +
+                    $"Error: {ex.Message}",
+                    "Video Capture Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
 
@@ -41,20 +57,39 @@ namespace AgOpenGPS
 
         private void startButton_Click(object sender, EventArgs e)
         {
-            var videoSource = new VideoCaptureDevice(_videoDevices[deviceComboBox.SelectedIndex].MonikerString);
+            try
+            {
+                var videoSource = new VideoCaptureDevice(_videoDevices[deviceComboBox.SelectedIndex].MonikerString);
 
-            videoSourcePlayer.VideoSource = videoSource;
-            videoSourcePlayer.Start();
+                videoSourcePlayer.VideoSource = videoSource;
+                videoSourcePlayer.Start();
 
-            UpdateButtons();
+                UpdateButtons();
+            }
+            catch (Exception ex)
+            {
+                Log.EventWriter($"Failed to start video capture: {ex}");
+                MessageBox.Show(
+                    $"Failed to start video device.\n\nError: {ex.Message}",
+                    "Video Capture Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private void stopButton_Click(object sender, EventArgs e)
         {
-            videoSourcePlayer.SignalToStop();
-            videoSourcePlayer.WaitForStop();
+            try
+            {
+                videoSourcePlayer.SignalToStop();
+                videoSourcePlayer.WaitForStop();
 
-            UpdateButtons();
+                UpdateButtons();
+            }
+            catch (Exception ex)
+            {
+                Log.EventWriter($"Failed to stop video capture: {ex}");
+            }
         }
     }
 }

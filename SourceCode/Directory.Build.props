@@ -4,6 +4,8 @@
     <TargetFramework>net48</TargetFramework>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <OutputPath>$(MSBuildThisFileDirectory)..\AgOpenGPS\</OutputPath>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
