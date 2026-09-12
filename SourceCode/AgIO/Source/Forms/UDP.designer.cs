@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Net;
@@ -68,14 +69,22 @@ namespace AgIO
 
         //scan results placed here
         public string scanReturn = "Scanning...";
-        
-        // Data stream
-        private byte[] buffer = new byte[1024];
+
+        // Data stream - separate buffers for thread safety
+        private byte[] udpBuffer = new byte[2048];
+        private byte[] loopbackBuffer = new byte[2048];
 
         //used to send communication check pgn= C8 or 200
-        private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 0x47 };
+        private byte[] helloFromAgIO = { 0x80, 0x81, 0x7F, 200, 3, 56, 0, 0, 130 };
 
         public IPAddress ipCurrent;
+
+        // Tracks module IPs that have actively responded (hello PGNs), with last-seen timestamp.
+        // Entries older than ModuleIpExpiryMs are treated as expired and no longer targeted directly.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> respondedModuleIPs =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>();
+        private const int ModuleIpExpiryMs = 5000;
+
         //initialize loopback and udp network
         public void LoadUDPNetwork()
         {
@@ -97,7 +106,7 @@ namespace AgIO
                 UDPSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 UDPSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
                 UDPSocket.Bind(new IPEndPoint(IPAddress.Any, 9999));
-                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP,
+                UDPSocket.BeginReceiveFrom(udpBuffer, 0, udpBuffer.Length, SocketFlags.None, ref endPointUDP,
                     new AsyncCallback(ReceiveDataUDPAsync), null);
 
                 isUDPNetworkConnected = true;
@@ -133,13 +142,13 @@ namespace AgIO
         }
 
         private void LoadLoopback()
-        { 
+        {
             try //loopback
             {
                 loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
                 loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 17777));
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
+                loopBackSocket.BeginReceiveFrom(loopbackBuffer, 0, loopbackBuffer.Length, SocketFlags.None, ref endPointLoopBack,
                     new AsyncCallback(ReceiveDataLoopAsync), null);
                 Log.EventWriter("Loopback is Connected: " + IPAddress.Loopback.ToString() + ":17777");
 
@@ -162,15 +171,16 @@ namespace AgIO
         {
             try
             {
-                if (byteData.Length != 0)
+                if (byteData.Length != 0 && loopBackSocket != null)
                 {
                     // Send packet to AgVR
                     loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None, endPoint,
-                        new AsyncCallback(SendDataLoopAsync), null);
+                         new AsyncCallback(SendDataLoopAsync), null);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Log.EventWriter("SendDataToLoopBack Error: " + ex.Message);
             }
         }
 
@@ -178,10 +188,14 @@ namespace AgIO
         {
             try
             {
-                loopBackSocket.EndSend(asyncResult);
+                if (loopBackSocket != null)
+                {
+                    loopBackSocket.EndSend(asyncResult);
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Log.EventWriter("SendDataLoopAsync Error: " + ex.Message);
             }
         }
 
@@ -191,10 +205,17 @@ namespace AgIO
 
         private void ReceiveFromLoopBack(byte[] data)
         {
-            //Send out to udp network
-            SendUDPMessage(data, epModule);
+            if (data == null || data.Length < 4)
+            {
+                return;
+            }
 
-            if (data[0] == 0x80 && data[1] == 0x81)
+            if (isUDPNetworkConnected)
+            {
+                //Send out to udp network
+                SendUDPMessage(data, epModule);
+            }
+            else if (data[0] == 0x80 && data[1] == 0x81)
             {
                 switch (data[3])
                 {
@@ -247,20 +268,35 @@ namespace AgIO
         {
             try
             {
+                if (loopBackSocket == null) return;
+
                 // Receive all data
                 int msgLen = loopBackSocket.EndReceiveFrom(asyncResult, ref endPointLoopBack);
 
                 byte[] localMsg = new byte[msgLen];
-                Array.Copy(buffer, localMsg, msgLen);
-
-                // Listen for more connections again...
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
-                    new AsyncCallback(ReceiveDataLoopAsync), null);
+                Array.Copy(loopbackBuffer, localMsg, msgLen);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromLoopBack(localMsg)));
             }
-            catch
+            catch (Exception ex)
             {
+                Log.EventWriter("ReceiveDataLoopAsync Error: " + ex.Message);
+            }
+            finally
+            {
+                // Always restart listener once, in finally block
+                try
+                {
+                    if (loopBackSocket != null)
+                    {
+                        loopBackSocket.BeginReceiveFrom(loopbackBuffer, 0, loopbackBuffer.Length, SocketFlags.None, ref endPointLoopBack,
+                            new AsyncCallback(ReceiveDataLoopAsync), null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.EventWriter("ReceiveDataLoopAsync Re-listen Error: " + ex.Message);
+                }
             }
         }
 
@@ -268,7 +304,35 @@ namespace AgIO
 
         #region Send UDP
 
-        public void SendUDPMessage(byte[] byteData, IPEndPoint endPoint)
+        private void RecordRespondedModuleIP(string senderIp)
+        {
+            if (string.IsNullOrEmpty(senderIp)) return;
+            respondedModuleIPs[senderIp] = DateTime.Now;
+        }
+
+        // Returns the list of module IPs that responded within the expiry window (5s).
+        // Also prunes expired entries from the dictionary.
+        private List<string> GetActiveModuleIPs()
+        {
+            var active = new List<string>();
+            DateTime now = DateTime.Now;
+
+            foreach (var kvp in respondedModuleIPs)
+            {
+                if ((now - kvp.Value).TotalMilliseconds <= ModuleIpExpiryMs)
+                {
+                    active.Add(kvp.Key);
+                }
+                else
+                {
+                    respondedModuleIPs.TryRemove(kvp.Key, out _);
+                }
+            }
+
+            return active;
+        }
+
+        public void _sendUDPMessage(byte[] byteData, IPEndPoint endPoint)
         {
             if (isUDPNetworkConnected)
             {
@@ -277,11 +341,11 @@ namespace AgIO
                     if (epNtrip != null && endPoint.Port == epNtrip.Port)
                     {
                         if (isNTRIPLogOn)
-                            logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
+                            logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > NTRIP\r\n");
                     }
                     else
                     {
-                        logUDPSentence.Append(DateTime.Now.ToString("ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
+                        logUDPSentence.Append(DateTime.Now.ToString("HH:mm:ss.fff\t") + endPoint.ToString() + "\t" + " > " + byteData[3].ToString() + "\r\n");
                     }
                 }
 
@@ -303,14 +367,39 @@ namespace AgIO
             }
         }
 
+        // Sends UDP data only to IPs that have actively responded (hello PGNs) within the last 5 seconds.
+        // If no IP has responded yet (or all have expired), falls back to the subnet broadcast endpoint
+        // so new/unknown modules can still be discovered.
+        public void SendUDPMessage(byte[] byteData, IPEndPoint endPoint)
+        {
+            List<string> activeIPs = GetActiveModuleIPs();
+
+            if (activeIPs.Count == 0)
+            {
+                _sendUDPMessage(byteData, epModule);
+                return;
+            }
+
+            foreach (string ip in activeIPs)
+            {
+                if (IPAddress.TryParse(ip, out IPAddress addr))
+                {
+                    _sendUDPMessage(byteData, new IPEndPoint(addr, 8888));
+                }
+            }
+        }
         private void SendDataUDPAsync(IAsyncResult asyncResult)
         {
             try
             {
-                UDPSocket.EndSend(asyncResult);
+                if (UDPSocket != null)
+                {
+                    UDPSocket.EndSend(asyncResult);
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Log.EventWriter("SendDataUDPAsync Error: " + ex.Message);
             }
         }
 
@@ -322,25 +411,45 @@ namespace AgIO
         {
             try
             {
+                if (UDPSocket == null) return;
+
                 // Receive all data
                 int msgLen = UDPSocket.EndReceiveFrom(asyncResult, ref endPointUDP);
 
                 byte[] localMsg = new byte[msgLen];
-                Array.Copy(buffer, localMsg, msgLen);
+                Array.Copy(udpBuffer, localMsg, msgLen);
 
-                // Listen for more connections again...
-                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP, 
-                    new AsyncCallback(ReceiveDataUDPAsync), null);
+                // Capture sender IP now (before BeginReceiveFrom overwrites endPointUDP with the next packet's sender)
+                string senderIp = (endPointUDP as IPEndPoint)?.Address.ToString();
 
-                BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(localMsg)));
+                // Process the received data
+                ProcessReceivedUDPData(localMsg, senderIp);
 
             }
-            catch 
+            catch (Exception ex)
             {
+                Log.EventWriter("ReceiveDataUDPAsync Error: " + ex.Message);
+            }
+            finally
+            {
+                // Always restart listener once, in finally block - CRITICAL FIX: removed duplicate call
+                try
+                {
+                    if (UDPSocket != null && isUDPNetworkConnected)
+                    {
+                        UDPSocket.BeginReceiveFrom(udpBuffer, 0, udpBuffer.Length, SocketFlags.None, ref endPointUDP,
+                            new AsyncCallback(ReceiveDataUDPAsync), null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.EventWriter("ReceiveDataUDPAsync Re-listen Error: " + ex.Message);
+                }
             }
         }
 
-        private void ReceiveFromUDP(byte[] data)
+        // Process received UDP data - separated from socket operations for better code organization
+        private void ProcessReceivedUDPData(byte[] data, string senderIp)
         {
             try
             {
@@ -348,11 +457,10 @@ namespace AgIO
                 {
                     //module return via udp sent to AOG
                     SendToLoopBackMessageAOG(data);
-
                     //check for Scan and Hello
                     if (data[3] == 126 && data.Length == 11)
                     {
-
+                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromAutoSteer = 0;
                         if (isViewAdvanced)
                         {
@@ -368,7 +476,7 @@ namespace AgIO
 
                     else if (data[3] == 123 && data.Length == 11)
                     {
-
+                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromMachine = 0;
 
                         if (isViewAdvanced)
@@ -380,8 +488,10 @@ namespace AgIO
                     }
 
                     else if (data[3] == 121 && data.Length == 11)
+                    {
+                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromIMU = 0;
-
+                    }
                     //scan Reply
                     else if (data[3] == 203 && data.Length == 13) //
                     {

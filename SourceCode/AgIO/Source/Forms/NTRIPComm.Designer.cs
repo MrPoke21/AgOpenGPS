@@ -269,6 +269,7 @@ namespace AgIO
                     // Disconnect when already connected
                     if (spRadio != null)
                     {
+                        spRadio.DataReceived -= NtripPort_DataReceived; // Fix #6a: unsubscribe BEFORE Close
                         spRadio.Close();
                         spRadio.Dispose();
                     }
@@ -308,6 +309,7 @@ namespace AgIO
                     // Disconnect when already connected
                     if (spRadio != null)
                     {
+                        spRadio.DataReceived -= NtripPort_DataReceived; // Fix #6b: unsubscribe BEFORE Close
                         spRadio.Close();
                         spRadio.Dispose();
                     }
@@ -350,6 +352,7 @@ namespace AgIO
             if (tmr != null)
             {
                 tmr.Dispose();
+                tmr = null; // Fix #8: null after Dispose so IncrementNTRIPWatchDog cannot access a disposed Timer
             }
         }
 
@@ -363,7 +366,7 @@ namespace AgIO
                 ReconnectRequest();
 
             //Once all connected set the timer GGA to NTRIP Settings
-            if (sendGGAInterval > 0 && ntripCounter == 40) tmr.Interval = sendGGAInterval * 1000;
+            if (sendGGAInterval > 0 && tmr != null && ntripCounter == 40) tmr.Interval = sendGGAInterval * 1000;
         }
 
         private void SendAuthorization()
@@ -396,8 +399,7 @@ namespace AgIO
                     string str = "GET /" + mount + " HTTP/" + htt + "\r\n";
                     str += "User-Agent: NTRIP AgOpenGPSClient/6.4\r\n";
                     str += "Authorization: Basic " + auth + "\r\n"; //This line can be removed if no authorization is needed
-                                                                    //str += GGASentence; //this line can be removed if no position feedback is needed
-                    str += "Accept: */*\r\nConnection: close\r\n";
+                    str += "Ntrip-GGA: " + GGASentence.TrimEnd('\r', '\n') + "\r\n"; // VRS servers REQUIRE position data to generate virtual reference station                    str += "Accept: */*\r\nConnection: close\r\n";
                     str += "\r\n";
 
                     // Convert to byte array and send.
@@ -419,10 +421,97 @@ namespace AgIO
             }
         }
 
+        private List<int> allowedMessageIDs = new List<int>
+        {
+            1005, // Stationary RTK reference station
+            1006, // Stationary RTK reference station ARP with antenna height
+            1074, // GPS MSM4
+            1075, // GPS MSM5
+            1076, // GPS MSM6
+            1077, // GPS MSM7
+            1084, // GLONASS MSM4
+            1085, // GLONASS MSM5
+            1086, // GLONASS MSM6
+            1087, // GLONASS MSM7
+            1094, // Galileo MSM4
+            1095, // Galileo MSM5
+            1096, // Galileo MSM6
+            1097, // Galileo MSM7
+            1124, // BeiDou MSM4
+            1125, // BeiDou MSM5
+            1126, // BeiDou MSM6
+            1127, // BeiDou MSM7
+            1230 // GLONASS Code‐Phase Biases
+        };
+
+        public void UpdateAllowedMessageIDs(List<int> newIDs)
+        {
+            allowedMessageIDs = newIDs;
+        }
+
+        private byte[] FilterRTCMData(byte[] data)
+        {
+            if (allowedMessageIDs == null || allowedMessageIDs.Count == 0)
+            {
+                return data;
+            }
+
+            List<byte> filteredData = new List<byte>();
+            int i = 0;
+
+            while (i < data.Length - 5)
+            {
+                // Check for RTCM 3.x preamble (0xD3)
+                if (data[i] == 0xD3)
+                {
+                    // Extract message length (10 bits from bytes 1-2)
+                    // Byte 1: 6 reserved bits + upper 2 bits of length
+                    // Byte 2: lower 8 bits of length
+                    int messageLength = ((data[i + 1] & 0x03) << 8) | data[i + 2];
+
+                    // Check if we have enough data for the complete message
+                    if (i + 3 + messageLength + 3 > data.Length)
+                    {
+                        break; // Incomplete message
+                    }
+
+                    // Extract message ID (12 bits from first 1.5 bytes of payload)
+                    int messageID = (data[i + 3] << 4) | (data[i + 4] >> 4);
+
+                    if (allowedMessageIDs.Contains(messageID))
+                    {
+                        // Copy entire message: preamble(1) + length(2) + payload(messageLength) + CRC(3)
+                        int totalMessageSize = 3 + messageLength + 3;
+                        filteredData.AddRange(data.Skip(i).Take(totalMessageSize));
+                    }
+
+                    // Move to next message
+                    i += 3 + messageLength + 3;
+                }
+                else
+                {
+                    i++; // Search for next preamble
+                }
+            }
+
+            return filteredData.ToArray();
+        }
+
         public void OnAddMessage(byte[] data)
         {
+
+            // Szűrjük az adatokat
+            byte[] filteredData = FilterRTCMData(data);
+            if (filteredData.Length < 5)
+            {
+                return;
+            }
+            // További feldolgozás a szűrt adatokkal
+            SendNTRIP(filteredData);
+
+
             //update gui with stats
-            tripBytes += (uint)data.Length;
+            tripBytes += (uint)filteredData.Length;
 
             if (isViewAdvanced && isNTRIP_RequiredOn)
             {
@@ -431,19 +520,19 @@ namespace AgIO
 
                 try
                 {
-                    lblStationID.Text = (((data[4] & 15) << 8) + (data[5])).ToString();
+                    lblStationID.Text = (((filteredData[4] & 15) << 8) + (filteredData[5])).ToString();
 
-                    for (int i = 0; i < data.Length - 5; i++)
+                    for (int i = 0; i < filteredData.Length - 5; i++)
                     {
 
-                        if (data[i] == 211 && (data[i + 1] >> 2) == 0)
+                        if (filteredData[i] == 211 && (filteredData[i + 1] >> 2) == 0)
                         {
-                            mess = ((data[i + 3] << 4) + (data[i + 4] >> 4));
+                            mess = ((filteredData[i + 3] << 4) + (filteredData[i + 4] >> 4));
                             if (mess > 1000 && mess < 1231)
                             {
                                 rList.Add(mess);
-                                i += (data[i + 1] << 6) + (data[i + 2]) + 5;
-                                if (data[i + 1] != 211)
+                                i += (filteredData[i + 1] << 6) + (filteredData[i + 2]) + 5;
+                                if (i + 1 < filteredData.Length && filteredData[i + 1] != 211)
                                 {
                                     //rList.Clear();
                                     //break;
