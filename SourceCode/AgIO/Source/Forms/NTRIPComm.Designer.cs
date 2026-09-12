@@ -53,9 +53,6 @@ namespace AgIO
         List<int> rList = new List<int>();
         List<int> aList = new List<int>();
 
-        //NTRIP metering
-        Queue<byte> rawTrip = new Queue<byte>();
-
         //set up connection to Caster
         private void DoNTRIPSecondRoutine()
         {
@@ -506,10 +503,6 @@ namespace AgIO
             {
                 return;
             }
-            // További feldolgozás a szűrt adatokkal
-            SendNTRIP(filteredData);
-
-
             //update gui with stats
             tripBytes += (uint)filteredData.Length;
 
@@ -555,69 +548,12 @@ namespace AgIO
             //reset watchdog since we have updated data
             NTRIP_Watchdog = 0;
 
-            if (isNTRIP_RequiredOn)
-            {
-                //move the ntrip stream to queue
-                for (int i = 0; i < data.Length; i++)
-                {
-                    rawTrip.Enqueue(data[i]);
-                }
-
-                ntripMeterTimer.Enabled = true;
-            }
-            else
-            {
-                lblToGPS.Text = data.Length.ToString();
-                //send it
-                SendNTRIP(data);
-            }
-
-
-        }
-
-        private void ntripMeterTimer_Tick(object sender, EventArgs e)
-        {
-            //we really should get here, but have to check
-            if (rawTrip.Count == 0) return;
-
-            //how many bytes in the Queue
-            int cnt = rawTrip.Count;
-
-            //how many sends have occured
             traffic.cntrGPSIn++;
+            traffic.cntrGPSInBytes += filteredData.Length;
+            lblToGPS.Text = filteredData.Length.ToString();
 
-            //128 bytes chunks max
-            if (cnt > packetSizeNTRIP) cnt = packetSizeNTRIP;
-
-            //new data array to send
-            byte[] trip = new byte[cnt];
-
-            traffic.cntrGPSInBytes += cnt;
-
-            //dequeue into the array
-            for (int i = 0; i < cnt; i++) trip[i] = rawTrip.Dequeue();
-
-            //send it
-            SendNTRIP(trip);
-
-            //Are we done?
-            if (rawTrip.Count == 0)
-            {
-                ntripMeterTimer.Enabled = false;
-
-                if (focusSkipCounter != 0)
-                {
-                    lblToGPS.Text = traffic.cntrGPSInBytes == 0 ? "---" : (traffic.cntrGPSInBytes).ToString();
-                    traffic.cntrGPSInBytes = 0;
-                }
-            }
-
-            //Can't keep up as internet dumped a shit load so clear
-            if (rawTrip.Count > 10000) rawTrip.Clear();
-
-            ////show how many bytes left in the queue
-            if (isViewAdvanced)
-                lblCount.Text = rawTrip.Count.ToString();
+            // Send the filtered RTCM stream once without artificial packetization or timer delay.
+            SendNTRIP(filteredData);
         }
 
         public void SendNTRIP(byte[] data)

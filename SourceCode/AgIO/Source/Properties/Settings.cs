@@ -59,10 +59,9 @@ namespace AgIO.Properties
         public bool setPort_wasRtcmConnected = false;
         public bool setNTRIP_sendToSerial = true;
         public bool setNTRIP_sendToUDP = true;
-        public int setNTRIP_packetSize = 256;
-        public bool setMod_isIMUConnected = true;
         public bool setMod_isMachineConnected = true;
         public bool setMod_isSteerConnected = true;
+        public bool setMod_isIMUConnected = true;
         public bool setPass_isOn = false;
         public byte etIP_SubnetOne = 192;
         public byte etIP_SubnetTwo = 168;

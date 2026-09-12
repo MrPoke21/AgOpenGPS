@@ -384,7 +384,7 @@ namespace AgIO
             {
                 if (IPAddress.TryParse(ip, out IPAddress addr))
                 {
-                    _sendUDPMessage(byteData, new IPEndPoint(addr, 8888));
+                    _sendUDPMessage(byteData, new IPEndPoint(addr, endPoint.Port));
                 }
             }
         }
@@ -422,7 +422,7 @@ namespace AgIO
                 // Capture sender IP now (before BeginReceiveFrom overwrites endPointUDP with the next packet's sender)
                 string senderIp = (endPointUDP as IPEndPoint)?.Address.ToString();
 
-                // Process the received data
+                // Process the packet on the receive thread. UI updates are marshalled separately.
                 ProcessReceivedUDPData(localMsg, senderIp);
 
             }
@@ -448,6 +448,80 @@ namespace AgIO
             }
         }
 
+        private void UpdateSteerModuleStatus(string ping, string steerAngle, string wasCounts, string switchStatus, string workSwitchStatus)
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+
+            if (InvokeRequired)
+            {
+                BeginInvoke((MethodInvoker)(() => UpdateSteerModuleStatus(ping, steerAngle, wasCounts, switchStatus, workSwitchStatus)));
+                return;
+            }
+
+            if (!isViewAdvanced) return;
+
+            lblPing.Text = ping;
+            lblSteerAngle.Text = steerAngle;
+            lblWASCounts.Text = wasCounts;
+            lblSwitchStatus.Text = switchStatus;
+            lblWorkSwitchStatus.Text = workSwitchStatus;
+        }
+
+        private void UpdateMachineModuleStatus(string ping, string inputs1To8, string inputs9To16)
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+
+            if (InvokeRequired)
+            {
+                BeginInvoke((MethodInvoker)(() => UpdateMachineModuleStatus(ping, inputs1To8, inputs9To16)));
+                return;
+            }
+
+            if (!isViewAdvanced) return;
+
+            lblPingMachine.Text = ping;
+            lbl1To8.Text = inputs1To8;
+            lbl9To16.Text = inputs9To16;
+        }
+
+        private void UpdateScanReply(byte module, string ip, byte[] subnet, string subnetString)
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+
+            if (InvokeRequired)
+            {
+                BeginInvoke((MethodInvoker)(() => UpdateScanReply(module, ip, subnet, subnetString)));
+                return;
+            }
+
+            scanReply.subnet[0] = subnet[0];
+            scanReply.subnet[1] = subnet[1];
+            scanReply.subnet[2] = subnet[2];
+            scanReply.subnetStr = subnetString;
+            scanReply.isNewData = true;
+
+            if (module == 126)
+            {
+                scanReply.steerIP = ip;
+                scanReply.isNewSteer = true;
+            }
+            else if (module == 123)
+            {
+                scanReply.machineIP = ip;
+                scanReply.isNewMachine = true;
+            }
+            else if (module == 121)
+            {
+                scanReply.IMU_IP = ip;
+                scanReply.isNewIMU = true;
+            }
+            else if (module == 120)
+            {
+                scanReply.GPS_IP = ip;
+                scanReply.isNewGPS = true;
+            }
+        }
+
         // Process received UDP data - separated from socket operations for better code organization
         private void ProcessReceivedUDPData(byte[] data, string senderIp)
         {
@@ -462,16 +536,13 @@ namespace AgIO
                     {
                         RecordRespondedModuleIP(senderIp);
                         traffic.helloFromAutoSteer = 0;
-                        if (isViewAdvanced)
-                        {
-                            lblPing.Text = (((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds - pingSecondsStart) * 1000).ToString("N0");
-                            double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
-                            lblSteerAngle.Text = (actualSteerAngle * 0.01).ToString("N1");
-                            lblWASCounts.Text = ((Int16)((data[8] << 8) + data[7])).ToString();
-
-                            lblSwitchStatus.Text = ((data[9] & 2) == 2).ToString();
-                            lblWorkSwitchStatus.Text = ((data[9] & 1) == 1).ToString();
-                        }
+                        double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
+                        UpdateSteerModuleStatus(
+                            (((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds - pingSecondsStart) * 1000).ToString("N0"),
+                            (actualSteerAngle * 0.01).ToString("N1"),
+                            ((Int16)((data[8] << 8) + data[7])).ToString(),
+                            ((data[9] & 2) == 2).ToString(),
+                            ((data[9] & 1) == 1).ToString());
                     }
 
                     else if (data[3] == 123 && data.Length == 11)
@@ -479,12 +550,10 @@ namespace AgIO
                         RecordRespondedModuleIP(senderIp);
                         traffic.helloFromMachine = 0;
 
-                        if (isViewAdvanced)
-                        {
-                            lblPingMachine.Text = (((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds - pingSecondsStart) * 1000).ToString("N0");
-                            lbl1To8.Text = Convert.ToString(data[5], 2).PadLeft(8, '0');
-                            lbl9To16.Text = Convert.ToString(data[6], 2).PadLeft(8, '0');
-                        }
+                        UpdateMachineModuleStatus(
+                            (((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds - pingSecondsStart) * 1000).ToString("N0"),
+                            Convert.ToString(data[5], 2).PadLeft(8, '0'),
+                            Convert.ToString(data[6], 2).PadLeft(8, '0'));
                     }
 
                     else if (data[3] == 121 && data.Length == 11)
@@ -495,60 +564,12 @@ namespace AgIO
                     //scan Reply
                     else if (data[3] == 203 && data.Length == 13) //
                     {
-                        if (data[2] == 126)  //steer module
+                        if (data[2] == 126 || data[2] == 123 || data[2] == 121 || data[2] == 120)
                         {
-                            scanReply.steerIP = data[5].ToString() + "." + data[6].ToString() + "." + data[7].ToString() + "." + data[8].ToString();
-
-                            scanReply.subnet[0] = data[09];
-                            scanReply.subnet[1] = data[10];
-                            scanReply.subnet[2] = data[11];
-
-                            scanReply.subnetStr = data[9].ToString() + "." + data[10].ToString() + "." + data[11].ToString();
-
-                            scanReply.isNewData = true;
-                            scanReply.isNewSteer = true;
-                        }
-                        //
-                        else if (data[2] == 123)   //machine module
-                        {
-                            scanReply.machineIP = data[5].ToString() + "." + data[6].ToString() + "." + data[7].ToString() + "." + data[8].ToString();
-
-                            scanReply.subnet[0] = data[09];
-                            scanReply.subnet[1] = data[10];
-                            scanReply.subnet[2] = data[11];
-
-                            scanReply.subnetStr = data[9].ToString() + "." + data[10].ToString() + "." + data[11].ToString();
-
-                            scanReply.isNewData = true;
-                            scanReply.isNewMachine = true;
-
-                        }
-                        else if (data[2] == 121)   //IMU Module
-                        {
-                            scanReply.IMU_IP = data[5].ToString() + "." + data[6].ToString() + "." + data[7].ToString() + "." + data[8].ToString();
-
-                            scanReply.subnet[0] = data[09];
-                            scanReply.subnet[1] = data[10];
-                            scanReply.subnet[2] = data[11];
-
-                            scanReply.subnetStr = data[9].ToString() + "." + data[10].ToString() + "." + data[11].ToString();
-
-                            scanReply.isNewData = true;
-                            scanReply.isNewIMU = true;
-                        }
-
-                        else if (data[2] == 120)    //GPS module
-                        {
-                            scanReply.GPS_IP = data[5].ToString() + "." + data[6].ToString() + "." + data[7].ToString() + "." + data[8].ToString();
-
-                            scanReply.subnet[0] = data[09];
-                            scanReply.subnet[1] = data[10];
-                            scanReply.subnet[2] = data[11];
-
-                            scanReply.subnetStr = data[9].ToString() + "." + data[10].ToString() + "." + data[11].ToString();
-
-                            scanReply.isNewData = true;
-                            scanReply.isNewGPS = true;
+                            string ip = data[5].ToString() + "." + data[6].ToString() + "." + data[7].ToString() + "." + data[8].ToString();
+                            byte[] subnet = { data[9], data[10], data[11] };
+                            string subnetString = data[9].ToString() + "." + data[10].ToString() + "." + data[11].ToString();
+                            UpdateScanReply(data[2], ip, subnet, subnetString);
                         }
                     }
 

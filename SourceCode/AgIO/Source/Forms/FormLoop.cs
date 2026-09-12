@@ -57,9 +57,6 @@ namespace AgIO
 
         public bool isNTRIPToggle;
 
-        //usually 256 - send ntrip to serial in chunks
-        public int packetSizeNTRIP;
-
         public bool lastHelloGPS, lastHelloAutoSteer, lastHelloMachine, lastHelloIMU;
         public bool isConnectedIMU, isConnectedSteer, isConnectedMachine;
 
@@ -139,8 +136,6 @@ namespace AgIO
             LoadLoopback();
 
             isSendNMEAToUDP = Properties.Settings.Default.setUDP_isSendNMEAToUDP;
-
-            packetSizeNTRIP = Properties.Settings.Default.setNTRIP_packetSize;
 
             isSendToSerial = Settings.Default.setNTRIP_sendToSerial;
             isSendToUDP = Settings.Default.setNTRIP_sendToUDP;

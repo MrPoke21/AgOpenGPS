@@ -77,8 +77,6 @@
             this.cboxToSerial = new System.Windows.Forms.CheckBox();
             this.cboxToUDP = new System.Windows.Forms.CheckBox();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.comboboxPacketSize = new System.Windows.Forms.ComboBox();
-            this.labelRtcmPort = new System.Windows.Forms.Label();
             this.cboxIsNTRIPOn = new System.Windows.Forms.CheckBox();
             this.btnSerialOK = new System.Windows.Forms.Button();
             this.btnSerialCancel = new System.Windows.Forms.Button();
@@ -738,8 +736,6 @@
             // tabPage3
             // 
             this.tabPage3.BackColor = System.Drawing.Color.Gainsboro;
-            this.tabPage3.Controls.Add(this.comboboxPacketSize);
-            this.tabPage3.Controls.Add(this.labelRtcmPort);
             this.tabPage3.Controls.Add(this.cboxHTTP);
             this.tabPage3.Controls.Add(this.checkBoxusetcp);
             this.tabPage3.Controls.Add(this.label20);
@@ -748,32 +744,6 @@
             this.tabPage3.Size = new System.Drawing.Size(733, 515);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Advanced";
-            // 
-            // comboboxPacketSize
-            // 
-            this.comboboxPacketSize.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.comboboxPacketSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxPacketSize.Font = new System.Drawing.Font("Tahoma", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.comboboxPacketSize.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
-            this.comboboxPacketSize.FormattingEnabled = true;
-            this.comboboxPacketSize.Items.AddRange(new object[] {
-            "64",
-            "128",
-            "256"});
-            this.comboboxPacketSize.Location = new System.Drawing.Point(68, 345);
-            this.comboboxPacketSize.Name = "comboboxPacketSize";
-            this.comboboxPacketSize.Size = new System.Drawing.Size(129, 47);
-            this.comboboxPacketSize.TabIndex = 138;
-            // 
-            // labelRtcmPort
-            // 
-            this.labelRtcmPort.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelRtcmPort.Location = new System.Drawing.Point(48, 280);
-            this.labelRtcmPort.Name = "labelRtcmPort";
-            this.labelRtcmPort.Size = new System.Drawing.Size(174, 62);
-            this.labelRtcmPort.TabIndex = 137;
-            this.labelRtcmPort.Text = "UDP Send Packet Burst \r\nDefault 256 bytes\r\n";
-            this.labelRtcmPort.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // cboxIsNTRIPOn
             // 
@@ -926,8 +896,6 @@
         private System.Windows.Forms.ListBox listboxIP;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TabPage tabPage3;
-        private System.Windows.Forms.ComboBox comboboxPacketSize;
-        private System.Windows.Forms.Label labelRtcmPort;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Button btnSerialCancel;
