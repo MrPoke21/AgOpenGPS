@@ -529,12 +529,12 @@ namespace AgIO
             {
                 if (data[0] == 0x80 && data[1] == 0x81)
                 {
+                    RecordRespondedModuleIP(senderIp);
                     //module return via udp sent to AOG
                     SendToLoopBackMessageAOG(data);
                     //check for Scan and Hello
                     if (data[3] == 126 && data.Length == 11)
                     {
-                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromAutoSteer = 0;
                         double actualSteerAngle = (Int16)((data[6] << 8) + data[5]);
                         UpdateSteerModuleStatus(
@@ -547,7 +547,6 @@ namespace AgIO
 
                     else if (data[3] == 123 && data.Length == 11)
                     {
-                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromMachine = 0;
 
                         UpdateMachineModuleStatus(
@@ -558,11 +557,10 @@ namespace AgIO
 
                     else if (data[3] == 121 && data.Length == 11)
                     {
-                        RecordRespondedModuleIP(senderIp);
                         traffic.helloFromIMU = 0;
                     }
                     //scan Reply
-                    else if (data[3] == 203 && data.Length == 13) //
+                    else if (data[3] == 203) //
                     {
                         if (data[2] == 126 || data[2] == 123 || data[2] == 121 || data[2] == 120)
                         {

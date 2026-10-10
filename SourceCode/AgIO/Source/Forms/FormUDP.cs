@@ -134,7 +134,7 @@ namespace AgIO
 
             bool isSubnetMatchCard = false;
 
-            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0x47 };
+            byte[] scanModules = { 0x80, 0x81, 0x7F, 202, 3, 202, 202, 5, 0xE5 };
 
             //Send out 255x4 to each installed network interface
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
