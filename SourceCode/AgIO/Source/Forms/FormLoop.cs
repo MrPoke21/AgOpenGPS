@@ -229,29 +229,10 @@ namespace AgIO
             //update Caster IP from URL, just use the old one if can't find
             if (isNTRIP_RequiredOn)
             {
-                //broadCasterIP = Properties.Settings.Default.setNTRIP_casterIP; //Select correct Address
                 broadCasterIP = null;
-                string actualIP = Properties.Settings.Default.setNTRIP_casterURL.Trim();
 
-                try
+                if (!ResolveCasterIP())
                 {
-                    IPAddress[] addresslist = Dns.GetHostAddresses(actualIP);
-                    foreach (IPAddress address in addresslist)
-                    {
-                        if (address.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            broadCasterIP = address.ToString().Trim();
-                            Properties.Settings.Default.setNTRIP_casterIP = broadCasterIP;
-                            Properties.Settings.Default.Save();
-                            break;
-                        }
-                    }
-
-                    if (broadCasterIP == null) throw new NullReferenceException();
-                }
-                catch (Exception ex)
-                {
-                    Log.EventWriter(ex.ToString());
                     TimedMessageBox(1500, "URL Not Located, Network Down?", "Cannot Find: " + Properties.Settings.Default.setNTRIP_casterURL);
                     //if we had a timer already, kill it
                     tmr?.Dispose();

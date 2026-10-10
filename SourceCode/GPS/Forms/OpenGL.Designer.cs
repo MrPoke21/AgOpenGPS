@@ -2429,7 +2429,8 @@ namespace AgOpenGPS
                 ScreenTextures.MenuShowHide.Draw(menuShowHideCoord, menuShowHideCoord + sizeDelta);
 
                 center += 50;
-                font.DrawText(center - 56, hite - 72, "x" + gridToolSpacing.ToString(), 1);
+                if (isDebugOn)
+                    font.DrawText(center - 56, hite - 72, "x" + gridToolSpacing.ToString(), 1);
             }
 
             center = oglMain.Width / -2 + 10;
@@ -2438,13 +2439,17 @@ namespace AgOpenGPS
             string strHeading = (deg).ToString("N1");
             int lenth = 18 * strHeading.Length;
 
-            GL.Color3(0.9852f, 0.982f, 0.983f);
-            font.DrawText(oglMain.Width / 2 - lenth, 10, strHeading, 1);
+            // Debug values, only shown when the debug option is on
+            if (isDebugOn)
+            {
+                GL.Color3(0.9852f, 0.982f, 0.983f);
+                font.DrawText(oglMain.Width / 2 - lenth, 10, strHeading, 1);
 
-            //GPS Step
-            if (distanceCurrentStepFixDisplay < 0.03 * 100)
-                GL.Color3(0.98f, 0.82f, 0.653f);
-            font.DrawText(center, 10, distanceCurrentStepFixDisplay.ToString("N1") + "cm", 1);
+                //GPS Step
+                if (distanceCurrentStepFixDisplay < 0.03 * 100)
+                    GL.Color3(0.98f, 0.82f, 0.653f);
+                font.DrawText(center, 10, distanceCurrentStepFixDisplay.ToString("N1") + "cm", 1);
+            }
 
             if (isMaxAngularVelocity)
             {

@@ -46,6 +46,13 @@ namespace AgIO
         public bool isNTRIP_Sending = false;
         public bool isRunGGAInterval = false;
 
+        //true once the HTTP request has been sent to the caster, reset on every reconnect
+        private bool isNTRIP_AuthSent = false;
+
+        //counts real RTCM bytes received since the caster accepted the connection - a caster
+        //can send "200 OK" and still reject the mountpoint by closing before any real data flows
+        private uint bytesSinceConnected = 0;
+
         public bool isRadio_RequiredOn = false;
         public bool isSerialPass_RequiredOn = false;
         internal SerialPort spRadio = new SerialPort("Radio", 9600, Parity.None, 8, StopBits.One);
@@ -83,6 +90,8 @@ namespace AgIO
             {
                 if (ntripCounter > 29)
                 {
+                    Log.EventWriter("NTRIP - Not connecting to caster (generic connecting-phase timeout)");
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
                     TimedMessageBox(1500, "Connection Problem", "Not Connecting To Caster");
                     ReconnectRequest();
                 }
@@ -196,10 +205,72 @@ namespace AgIO
             btnStartStopNtrip.Text = "Off";
         }
 
+        //once we have a known caster IP, only re-resolve this often - a blocking DNS
+        //lookup on every single reconnect attempt can freeze the UI thread during
+        //a network/DNS outage
+        private static readonly TimeSpan casterResolveInterval = TimeSpan.FromSeconds(30);
+        private DateTime lastCasterResolveTime = DateTime.MinValue;
+
+        // Resolve the caster hostname/URL to an IPv4 address. Updates broadCasterIP (and
+        // persists the setting) only when a new address is found; on failure the previous
+        // broadCasterIP is left untouched so a temporary DNS hiccup doesn't stop reconnects.
+        private bool ResolveCasterIP()
+        {
+            if (!string.IsNullOrEmpty(broadCasterIP) && DateTime.UtcNow - lastCasterResolveTime < casterResolveInterval)
+            {
+                return true;
+            }
+
+            lastCasterResolveTime = DateTime.UtcNow;
+            string actualIP = Properties.Settings.Default.setNTRIP_casterURL.Trim();
+
+            try
+            {
+                IPAddress[] addresslist = Dns.GetHostAddresses(actualIP);
+                foreach (IPAddress address in addresslist)
+                {
+                    if (address.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        string resolvedIP = address.ToString().Trim();
+                        if (resolvedIP != broadCasterIP)
+                        {
+                            broadCasterIP = resolvedIP;
+                            Properties.Settings.Default.setNTRIP_casterIP = broadCasterIP;
+                            Properties.Settings.Default.Save();
+                            Log.EventWriter("NTRIP - Caster IP resolved to: " + broadCasterIP);
+                        }
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.EventWriter("Catch -> NTRIP Resolve Caster IP: " + ex.ToString());
+            }
+
+            return false;
+        }
+
         public void StartNTRIP()
         {
             if (isNTRIP_RequiredOn)
             {
+                // Re-resolve the caster hostname in case its IP changed (e.g. dynamic DNS)
+                if (!ResolveCasterIP())
+                {
+                    Log.EventWriter("NTRIP - Cannot resolve caster URL: " + Properties.Settings.Default.setNTRIP_casterURL);
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+                    TimedMessageBox(2500, "NTRIP Connection Failed", "Cannot resolve caster URL: " + Properties.Settings.Default.setNTRIP_casterURL);
+
+                    if (string.IsNullOrEmpty(broadCasterIP))
+                    {
+                        //no previously known IP to fall back on - nothing to connect to
+                        ReconnectRequest();
+                        return;
+                    }
+                    //otherwise fall back to the last known IP and try anyway
+                }
+
                 broadCasterPort = Properties.Settings.Default.setNTRIP_casterPort; //Select correct port (usually 80 or 2101)
                 mount = Properties.Settings.Default.setNTRIP_mount; //Insert the correct mount
                 username = Properties.Settings.Default.setNTRIP_userName; //Insert your username!
@@ -242,10 +313,11 @@ namespace AgIO
                     clientSocket.NoDelay = true;
                     // Connect to server non-Blocking method
                     clientSocket.Blocking = false;
-                    clientSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(broadCasterIP), broadCasterPort), new AsyncCallback(OnConnect), null);
+                    clientSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(broadCasterIP), broadCasterPort), new AsyncCallback(OnConnect), clientSocket);
 
-                    Log.EventWriter("NTRIP - IP: " + broadCasterIP.ToString() + ":" + broadCasterPort.ToString()
+                    Log.EventWriter("NTRIP - Connecting to IP: " + broadCasterIP.ToString() + ":" + broadCasterPort.ToString()
                         + " To Port: " + toUDP_Port.ToString() + " Mount: " + mount);
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
                 }
                 catch (Exception ex)
                 {
@@ -344,6 +416,8 @@ namespace AgIO
             isNTRIP_Connected = false;
             isNTRIP_Starting = false;
             isNTRIP_Connecting = false;
+            isNTRIP_AuthSent = false;
+            bytesSinceConnected = 0;
 
             //if we had a timer already, kill it
             if (tmr != null)
@@ -368,6 +442,9 @@ namespace AgIO
 
         private void SendAuthorization()
         {
+            //already sent, now waiting on the caster's response - see OnAddMessage
+            if (isNTRIP_AuthSent) return;
+
             // Check we are connected
             if (clientSocket == null || !clientSocket.Connected)
             {
@@ -396,7 +473,8 @@ namespace AgIO
                     string str = "GET /" + mount + " HTTP/" + htt + "\r\n";
                     str += "User-Agent: NTRIP AgOpenGPSClient/6.4\r\n";
                     str += "Authorization: Basic " + auth + "\r\n"; //This line can be removed if no authorization is needed
-                    str += "Ntrip-GGA: " + GGASentence.TrimEnd('\r', '\n') + "\r\n"; // VRS servers REQUIRE position data to generate virtual reference station                    str += "Accept: */*\r\nConnection: close\r\n";
+                    str += "Ntrip-GGA: " + GGASentence.TrimEnd('\r', '\n') + "\r\n"; // VRS servers REQUIRE position data to generate virtual reference station
+                    str += "Accept: */*\r\nConnection: close\r\n";
                     str += "\r\n";
 
                     // Convert to byte array and send.
@@ -405,11 +483,18 @@ namespace AgIO
 
                     //enable to periodically send GGA sentence to server.
                     if (sendGGAInterval > 0) tmr.Enabled = true;
+
+                    //request sent - wait for the caster's HTTP response before declaring connected (see OnAddMessage)
+                    isNTRIP_AuthSent = true;
+                    isNTRIP_Starting = false;
                 }
-                //say its connected
-                isNTRIP_Connected = true;
-                isNTRIP_Starting = false;
-                isNTRIP_Connecting = false;
+                else
+                {
+                    //raw TCP passthrough, no HTTP handshake to validate
+                    isNTRIP_Connected = true;
+                    isNTRIP_Starting = false;
+                    isNTRIP_Connecting = false;
+                }
             }
             catch (Exception ex)
             {
@@ -496,15 +581,60 @@ namespace AgIO
 
         public void OnAddMessage(byte[] data)
         {
+            //the first reply after sending the request is the caster's HTTP response - validate it
+            //before treating anything as RTCM data
+            if (isNTRIP_AuthSent && !isNTRIP_Connected && !Properties.Settings.Default.setNTRIP_isTCP)
+            {
+                string response = Encoding.ASCII.GetString(data);
+                int headerEnd = response.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                string headerText = headerEnd >= 0 ? response.Substring(0, headerEnd) : response;
 
-            // Szűrjük az adatokat
+                if (headerText.Contains("200"))
+                {
+                    isNTRIP_Connected = true;
+                    isNTRIP_Connecting = false;
+                    bytesSinceConnected = 0;
+                    //the header itself is legitimate traffic - some casters (e.g. a "nearest
+                    //mountpoint" alias) need a moment after this to resolve a real station and
+                    //start streaming, so don't let the watchdog fire in that gap
+                    NTRIP_Watchdog = 0;
+                    Log.EventWriter("NTRIP - Caster accepted connection");
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+
+                    //some casters send the first RTCM data in the same read as the "200 OK"
+                    //header - keep it instead of discarding it below
+                    int bodyStart = headerEnd >= 0 ? headerEnd + 4 : data.Length;
+                    if (bodyStart >= data.Length) return;
+
+                    byte[] body = new byte[data.Length - bodyStart];
+                    Array.Copy(data, bodyStart, body, 0, body.Length);
+                    data = body;
+                    //fall through to process the leftover RTCM bytes below
+                }
+                else
+                {
+                    string firstLine = response.Split('\r')[0];
+                    Log.EventWriter("NTRIP - Caster rejected connection: " + firstLine);
+                    TimedMessageBox(2500, "NTRIP Connection Rejected", firstLine);
+                    ReconnectRequest();
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+                    return;
+                }
+            }
+
+            // Filter the RTCM stream before updating statistics or sending it.
             byte[] filteredData = FilterRTCMData(data);
             if (filteredData.Length < 5)
             {
                 return;
             }
+
             //update gui with stats
             tripBytes += (uint)filteredData.Length;
+
+            //only count genuine RTCM3 frames (sync byte 0xD3) - a caster can still send extra
+            //protocol/error text after its initial "200 OK" before closing the connection
+            if (data.Length > 0 && data[0] == 0xD3) bytesSinceConnected += (uint)data.Length;
 
             if (isViewAdvanced && isNTRIP_RequiredOn)
             {
@@ -607,15 +737,43 @@ namespace AgIO
 
         public void OnConnect(IAsyncResult ar)
         {
+            Socket sock = (Socket)ar.AsyncState;
+
             // Check if we were sucessfull
             try
             {
-                if (clientSocket.Connected)
-                    clientSocket.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), null);
+                //a stale callback from a socket that has since been replaced by a newer connection attempt
+                if (sock != clientSocket) return;
+
+                sock.EndConnect(ar);
+
+                if (sock.Connected)
+                    sock.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), sock);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //MessageBox.Show(ex.Message, "Unusual error during Connect!");
+                //only react if this is still the current connection attempt
+                bool isCurrent = (sock == clientSocket);
+                if (isCurrent)
+                {
+                    try { sock.Close(); } catch { /* already closed/disposed */ }
+                }
+
+                //marshal logging to the UI thread too - Log.sbEvents is not thread-safe
+                //and is otherwise only ever touched from there
+                string exDetails = ex.ToString();
+                string message = ex.Message;
+                BeginInvoke((MethodInvoker)(() =>
+                {
+                    Log.EventWriter("Catch -> NTRIP OnConnect: " + exDetails);
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+
+                    if (isCurrent)
+                    {
+                        TimedMessageBox(2500, "NTRIP Connection Failed", message);
+                        ReconnectRequest();
+                    }
+                }));
             }
         }
 
@@ -624,26 +782,68 @@ namespace AgIO
             // Check if we got any data
             try
             {
-                int nBytesRec = clientSocket.EndReceive(ar);
+                Socket sock = (Socket)ar.AsyncState;
+
+                //a stale callback from a socket that has since been replaced by a newer connection attempt
+                if (sock != clientSocket) return;
+
+                int nBytesRec = sock.EndReceive(ar);
                 if (nBytesRec > 0)
                 {
                     byte[] localMsg = new byte[nBytesRec];
                     Array.Copy(casterRecBuffer, localMsg, nBytesRec);
 
                     BeginInvoke((MethodInvoker)(() => OnAddMessage(localMsg)));
-                    clientSocket.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), null);
+                    sock.BeginReceive(casterRecBuffer, 0, casterRecBuffer.Length, SocketFlags.None, new AsyncCallback(OnRecievedData), sock);
                 }
                 else
                 {
-                    // If no data was recieved then the connection is probably dead
-                    Console.WriteLine("Client {0}, disconnected", clientSocket.RemoteEndPoint);
-                    clientSocket.Shutdown(SocketShutdown.Both);
-                    clientSocket.Close();
+                    // If no data was recieved then the connection is probably dead.
+                    // Some casters reject a bad mountpoint/credentials this way - by closing
+                    // the connection without ever sending an HTTP response.
+                    Console.WriteLine("Client {0}, disconnected", sock.RemoteEndPoint);
+                    sock.Shutdown(SocketShutdown.Both);
+                    sock.Close();
+
+                    //evaluate state lazily on the UI thread - it may already have been resolved
+                    //(e.g. a rejection response that arrived just before this close notification)
+                    BeginInvoke((MethodInvoker)(() =>
+                    {
+                        //this attempt was already handled by another event (typically the caster's
+                        //rejection text, processed a moment before this close notification)
+                        if (!isNTRIP_Connecting && !isNTRIP_Connected)
+                        {
+                            return;
+                        }
+
+                        //a caster can send "200 OK" and still reject the mountpoint by closing again
+                        //right away, before any real RTCM data ever flows - treat that as a rejection too
+                        bool wasAwaitingResponse = isNTRIP_AuthSent && (!isNTRIP_Connected || bytesSinceConnected == 0);
+
+                        if (wasAwaitingResponse)
+                        {
+                            Log.EventWriter("NTRIP - Caster closed connection without sending any RTCM data (check mountpoint/credentials)");
+                            TimedMessageBox(2500, "NTRIP Connection Rejected", "Caster closed the connection without sending any data (check mountpoint/credentials)");
+                        }
+                        else
+                        {
+                            Log.EventWriter("NTRIP - Connection closed by caster (was connected: " + isNTRIP_Connected + ", auth sent: " + isNTRIP_AuthSent + ")");
+                        }
+                        Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+                        ReconnectRequest();
+                    }));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //MessageBox.Show( this, ex.Message, "Unusual error druing Recieve!" );
+                //marshal logging to the UI thread - Log.sbEvents is not thread-safe
+                //and is otherwise only ever touched from there
+                string exDetails = ex.ToString();
+                BeginInvoke((MethodInvoker)(() =>
+                {
+                    Log.EventWriter("Catch -> NTRIP OnRecievedData: " + exDetails);
+                    Log.FileSaveSystemEvents(); //flush immediately for live diagnostics
+                }));
             }
         }
 

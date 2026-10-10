@@ -54,6 +54,7 @@ namespace AgOpenGPS
         public bool isKeyboardOn = true, isAutoStartAgIO = true, isSvennArrowOn = true;
         public bool isSectionlinesOn = true, isLineSmooth = true;
         public bool isHeadlandDistanceOn;
+        public bool isDebugOn = false;
 
         public bool isLightBarNotSteerBar = false;
 
@@ -528,6 +529,7 @@ namespace AgOpenGPS
             isTextureOn = Settings.Default.setDisplay_isTextureOn;
             isLogElevation = Settings.Default.setDisplay_isLogElevation;
             isLineSmooth = Properties.Settings.Default.setDisplay_isLineSmooth;
+            isDebugOn = Properties.Settings.Default.setDisplay_isDebugOn;
 
             isGridOn = Settings.Default.setMenu_isGridOn;
             isBrightnessOn = Settings.Default.setDisplay_isBrightnessOn;

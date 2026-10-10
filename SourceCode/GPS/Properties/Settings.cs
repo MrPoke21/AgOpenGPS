@@ -62,6 +62,7 @@ namespace AgOpenGPS.Properties
         public bool setWindow_isKioskMode = false;
         public bool setWindow_isShutdownComputer = false;
         public bool setDisplay_isShutdownWhenNoPower = false;
+        public bool setDisplay_isDebugOn = false;
 
         public int setDisplay_lightbarCmPerPixel = 5;
         public int setDisplay_lineWidth = 2;

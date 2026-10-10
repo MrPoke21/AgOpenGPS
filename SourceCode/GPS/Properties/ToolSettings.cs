@@ -1,3 +1,4 @@
+using AgLibrary.Logging;
 using AgLibrary.Settings;
 using System.Drawing;
 using System.IO;
@@ -137,8 +138,13 @@ namespace AgOpenGPS.Properties
                     var backupResult = XmlSettingsHandler.LoadXMLFile(backupPath, this);
                     if (backupResult == LoadResult.Ok)
                     {
+                        Log.EventWriter($"Tool profile '{toolFileName}': main file failed ({result}), loaded from backup '{backupPath}'");
                         result = LoadResult.Ok;
                         loadedFromBackup = true;
+                    }
+                    else
+                    {
+                        Log.EventWriter($"Tool profile '{toolFileName}': backup '{backupPath}' also failed ({backupResult})");
                     }
                 }
             }
